@@ -10,6 +10,7 @@ A Next.js application that leverages Claude AI to generate interactive H5P conte
   - True/False
   - Fill in the Blanks
   - Interactive Video
+  - Branching Scenario (for complex interactive content)
 - Instant preview of generated H5P modules
 - Easy download of the final H5P file
 
@@ -60,6 +61,105 @@ A Next.js application that leverages Claude AI to generate interactive H5P conte
 - `ANTHROPIC_API_KEY`: Your Anthropic API key for accessing Claude AI
 - `H5P_API_KEY`: API key for authenticating with the H5P REST API server
 - `H5P_API_ENDPOINT`: The base URL of your H5P REST API server
+
+## Deployment
+
+### Deploying to Vercel (Recommended)
+
+The easiest way to deploy your Next.js app is to use [Vercel](https://vercel.com), the platform built by the creators of Next.js.
+
+1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
+2. Import the project in Vercel
+3. Add your environment variables in the Vercel dashboard
+4. Deploy!
+
+```bash
+npm install -g vercel
+vercel
+```
+
+### Self-Hosting with Node.js
+
+You can deploy the application on your own server using Node.js:
+
+1. Build the application:
+   ```bash
+   npm run build
+   ```
+
+2. Start the production server:
+   ```bash
+   npm start
+   ```
+
+3. For production deployment, consider using a process manager like PM2:
+   ```bash
+   npm install -g pm2
+   pm2 start npm --name "h5p-ai-generator" -- start
+   ```
+
+### Deploying with Docker
+
+You can also run the application in a Docker container:
+
+1. Create a Dockerfile in the root directory:
+   ```dockerfile
+   FROM node:18-alpine AS base
+   
+   # Install dependencies only when needed
+   FROM base AS deps
+   WORKDIR /app
+   COPY package.json package-lock.json ./
+   RUN npm ci
+   
+   # Rebuild the source code only when needed
+   FROM base AS builder
+   WORKDIR /app
+   COPY --from=deps /app/node_modules ./node_modules
+   COPY . .
+   ENV NEXT_TELEMETRY_DISABLED 1
+   RUN npm run build
+   
+   # Production image, copy all the files and run next
+   FROM base AS runner
+   WORKDIR /app
+   ENV NODE_ENV production
+   ENV NEXT_TELEMETRY_DISABLED 1
+   
+   COPY --from=builder /app/public ./public
+   COPY --from=builder /app/.next/standalone ./
+   COPY --from=builder /app/.next/static ./.next/static
+   
+   EXPOSE 3000
+   ENV PORT 3000
+   
+   CMD ["node", "server.js"]
+   ```
+
+2. Update your `next.config.js` to support standalone output:
+   ```javascript
+   /** @type {import('next').NextConfig} */
+   const nextConfig = {
+     reactStrictMode: true,
+     output: 'standalone',
+     // other config...
+   };
+   
+   module.exports = nextConfig;
+   ```
+
+3. Build and run the Docker container:
+   ```bash
+   docker build -t h5p-ai-generator .
+   docker run -p 3000:3000 --env-file .env.local h5p-ai-generator
+   ```
+
+### Important Production Considerations
+
+1. Ensure your H5P API server is properly secured and has adequate resources
+2. Set appropriate rate limits for the Anthropic API to control costs
+3. Configure CORS headers if your front-end and API are on different domains
+4. Set up proper monitoring and logging for production environments
 
 ## Technologies Used
 
