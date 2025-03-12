@@ -172,8 +172,30 @@ export default function Home() {
                 <li>Multiple Choice Questions</li>
                 <li>True/False Questions</li>
                 <li>Fill in the Blanks</li>
-                <li>Interactive Videos</li>
+                <li>Drag and Drop</li>
+                <li>Image Hotspots</li>
+                <li>Course Presentation</li>
+                <li>Question Set</li>
+                <li>Dialog Cards</li>
+                <li>Mark the Words</li>
+                <li>Flashcards</li>
+                <li>Interactive Video <span className="text-amber-600 text-sm">(warning: may create corrupt files)</span></li>
+                <li>Branching Scenario (complex interactive content)</li>
+                <li>Arithmetic Quiz</li>
+                <li>Drag Text</li>
+                <li>Essay</li>
+                <li>Find the Hotspot</li>
+                <li>Audio</li>
+                <li>Accordion</li>
+                <li>Summary</li>
+                <li>Interactive Book <span className="text-amber-600 text-sm">(complex)</span></li>
               </ul>
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Tips:</span> For most educational content, start with Multiple Choice or Question Set. 
+                  Complex types like Branching Scenario or Interactive Video may require additional editing after generation.
+                </p>
+              </div>
             </div>
           </div>
         ) : (
@@ -199,7 +221,10 @@ export default function Home() {
             )}
             
             {step === 'preview' && contentId && (
-              <PreviewModule contentId={contentId} apiEndpoint={apiEndpoint} />
+              <div className="card">
+                <h2 className="text-xl font-semibold mb-4">Generated H5P Module</h2>
+                <PreviewModule contentId={contentId} apiEndpoint={apiEndpoint} />
+              </div>
             )}
           </div>
         )}

@@ -27,22 +27,30 @@ export default function ConversationUI({
     }
   };
   
-  // Helper to format JSON for display
-  const formatJsonForDisplay = (content) => {
+  // Helper to format content for display
+  const formatContentForDisplay = (content) => {
     try {
       // Check if the content contains JSON
       const jsonMatch = content.match(/```json([\s\S]*?)```/);
       if (jsonMatch && jsonMatch[1]) {
-        const jsonContent = jsonMatch[1].trim();
-        const formattedJson = JSON.stringify(JSON.parse(jsonContent), null, 2);
-        return content.replace(
+        // Replace the entire JSON block with a nicer message
+        const cleanedContent = content.replace(
           /```json([\s\S]*?)```/, 
-          `<pre class="bg-gray-100 p-4 rounded-md overflow-auto text-xs my-2"><code>${formattedJson}</code></pre>`
+          `<div class="bg-blue-50 border-l-4 border-blue-500 p-4 my-2 rounded">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <p class="font-medium text-blue-700">H5P content has been generated!</p>
+            </div>
+            <p class="text-sm text-blue-600 mt-1">The content is ready for preview below. Click "Download H5P" to save the file.</p>
+          </div>`
         );
+        return cleanedContent;
       }
       return content;
     } catch (error) {
-      console.error("Error parsing JSON:", error);
+      console.error("Error processing content:", error);
       return content;
     }
   };
@@ -71,7 +79,7 @@ export default function ConversationUI({
               ) : (
                 <div 
                   dangerouslySetInnerHTML={{ 
-                    __html: formatJsonForDisplay(msg.content) 
+                    __html: formatContentForDisplay(msg.content) 
                   }} 
                 />
               )}
