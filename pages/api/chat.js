@@ -11,16 +11,58 @@ async function getH5PLibraryVersions() {
     
     // Create a map of library names to their latest versions
     const libraryVersions = {};
-    libraries.forEach(lib => {
-      const [name, version] = lib.split(' ');
-      if (!libraryVersions[name] || version > libraryVersions[name]) {
-        libraryVersions[name] = version;
+    
+    // Ensure libraries is an array and handle different response formats
+    const libraryList = Array.isArray(libraries) ? libraries : 
+                       typeof libraries === 'object' ? Object.values(libraries) : [];
+    
+    libraryList.forEach(lib => {
+      // Handle different possible formats of library data
+      let name, version;
+      
+      if (typeof lib === 'string') {
+        // If lib is a string like "H5P.QuestionSet 1.20"
+        [name, version] = lib.split(' ');
+      } else if (typeof lib === 'object' && lib !== null) {
+        // If lib is an object with name and version properties
+        name = lib.machineName || lib.name;
+        version = lib.majorVersion + '.' + lib.minorVersion;
+      }
+      
+      if (name && version) {
+        if (!libraryVersions[name] || version > libraryVersions[name]) {
+          libraryVersions[name] = version;
+        }
       }
     });
+    
+    console.log('Processed library versions:', libraryVersions);
     return libraryVersions;
   } catch (error) {
     console.error('Error fetching H5P libraries:', error);
-    throw error;
+    // Return default versions if API call fails
+    return {
+      'H5P.MultiChoice': '1.16',
+      'H5P.TrueFalse': '1.8',
+      'H5P.Blanks': '1.14',
+      'H5P.InteractiveVideo': '1.27',
+      'H5P.BranchingScenario': '1.8',
+      'H5P.DragQuestion': '1.14',
+      'H5P.CoursePresentation': '1.25',
+      'H5P.QuestionSet': '1.20',
+      'H5P.Summary': '1.10',
+      'H5P.DialogCards': '1.8',
+      'H5P.InteractiveBook': '1.11',
+      'H5P.MarkTheWords': '1.5',
+      'H5P.Flashcards': '1.5',
+      'H5P.ImageHotspots': '1.10',
+      'H5P.ArithmeticQuiz': '1.1',
+      'H5P.DragText': '1.9',
+      'H5P.Essay': '1.5',
+      'H5P.FindTheHotspot': '1.0',
+      'H5P.Audio': '1.5',
+      'H5P.Accordion': '1.0'
+    };
   }
 }
 
