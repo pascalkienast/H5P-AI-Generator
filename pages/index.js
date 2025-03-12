@@ -39,14 +39,10 @@ export default function Home() {
       setIsLoading(true);
       setError(null);
       
-      // Add user message to conversation
-      const updatedMessages = [
-        ...messages,
-        { role: 'user', content }
-      ];
+      const newMessage = { role: 'user', content };
+      const updatedMessages = [...messages, newMessage];
       setMessages(updatedMessages);
       
-      // Call API to get Claude's response
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -58,35 +54,19 @@ export default function Home() {
       }
       
       const data = await response.json();
+      const assistantMessage = { role: 'assistant', content: data.response[0].text };
+      setMessages([...updatedMessages, assistantMessage]);
       
-      // Extract text from Claude's response
-      let assistantContent = '';
-      for (const content of data.response) {
-        if (content.type === 'text') {
-          assistantContent = content.text;
-        }
+      // Extract JSON content if present
+      const jsonContent = extractJsonFromResponse(data.response);
+      if (jsonContent) {
+        setNeedsMoreInfo(false);
+        await createH5PContent(jsonContent);
+        setIsCompleted(true);
       }
       
-      // Add assistant message to conversation
-      const newMessages = [
-        ...updatedMessages,
-        { role: 'assistant', content: assistantContent }
-      ];
-      setMessages(newMessages);
-      
-      // Update if AI needs more info
-      setNeedsMoreInfo(data.needsMoreInfo);
-      
-      // Check if response contains JSON
-      if (data.hasJson) {
-        const jsonContent = extractJsonFromResponse(data.response);
-        if (jsonContent) {
-          await createH5PContent(jsonContent);
-          setIsCompleted(true);
-        }
-      }
     } catch (err) {
-      setError(err.message);
+      setError(`Failed to send message: ${err.message}`);
       console.error('Error sending message:', err);
     } finally {
       setIsLoading(false);
