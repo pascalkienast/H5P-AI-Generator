@@ -16,6 +16,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid request body' });
     }
     
+    console.log('Sending request to Claude with messages:', messages);
+    
     const response = await anthropic.messages.create({
       model: "claude-3-5-sonnet-latest",
       max_tokens: 4096,
@@ -28,20 +30,32 @@ export default async function handler(req, res) {
 Key requirements:
 1. Generate complete H5P content in your first response
 2. Include all necessary metadata, parameters, and content structure
-3. Format the response as valid JSON within a code block
+3. Format the response as valid JSON within a code block, using the exact format:
+   \`\`\`json
+   {
+     "library": "H5P.MultiChoice 1.14",
+     "params": {
+       // content parameters here
+     }
+   }
+   \`\`\`
 4. Do not ask clarifying questions unless absolutely necessary
 5. Focus on creating high-quality educational content that works immediately
 
 Always structure your response as:
 1. Brief acknowledgment of the request
-2. Complete H5P content in JSON format
+2. Complete H5P content in JSON format as shown above
 3. Short confirmation that the content is ready for use`,
     });
+    
+    console.log('Claude response:', response);
     
     // Check if the response contains JSON
     const hasJson = response.content.some(content => 
       content.type === 'text' && content.text.includes('```json')
     );
+    
+    console.log('Has JSON:', hasJson);
     
     return res.status(200).json({
       response: response.content,

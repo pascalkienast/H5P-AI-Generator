@@ -17,12 +17,16 @@ export default function Home() {
   
   // Extract JSON from Claude's response
   const extractJsonFromResponse = (responseContent) => {
+    console.log('Extracting JSON from response:', responseContent);
     for (const content of responseContent) {
       if (content.type === 'text') {
+        console.log('Processing text content:', content.text);
         const jsonMatch = content.text.match(/```json([\s\S]*?)```/);
         if (jsonMatch && jsonMatch[1]) {
           try {
-            return JSON.parse(jsonMatch[1].trim());
+            const parsedJson = JSON.parse(jsonMatch[1].trim());
+            console.log('Successfully parsed JSON:', parsedJson);
+            return parsedJson;
           } catch (err) {
             console.error('Failed to parse JSON:', err);
             return null;
@@ -30,6 +34,7 @@ export default function Home() {
         }
       }
     }
+    console.log('No JSON found in response');
     return null;
   };
   
@@ -54,15 +59,23 @@ export default function Home() {
       }
       
       const data = await response.json();
+      console.log('Chat API response:', data);
+      
       const assistantMessage = { role: 'assistant', content: data.response[0].text };
       setMessages([...updatedMessages, assistantMessage]);
       
       // Extract JSON content if present
       const jsonContent = extractJsonFromResponse(data.response);
+      console.log('Extracted JSON content:', jsonContent);
+      
       if (jsonContent) {
+        console.log('JSON content found, creating H5P content...');
         setNeedsMoreInfo(false);
         await createH5PContent(jsonContent);
         setIsCompleted(true);
+      } else {
+        console.log('No JSON content found, continuing conversation...');
+        setNeedsMoreInfo(true);
       }
       
     } catch (err) {
@@ -76,6 +89,7 @@ export default function Home() {
   // Create H5P content
   const createH5PContent = async (jsonContent) => {
     try {
+      console.log('Creating H5P content with:', jsonContent);
       setError(null);
       
       const response = await fetch('/api/createH5P', {
@@ -85,10 +99,13 @@ export default function Home() {
       });
       
       if (!response.ok) {
-        throw new Error(`H5P API returned ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(`H5P API returned ${response.status}: ${JSON.stringify(errorData)}`);
       }
       
       const data = await response.json();
+      console.log('H5P content created successfully:', data);
+      
       setContentId(data.contentId);
       setApiEndpoint(data.apiEndpoint);
       setStep('preview');
