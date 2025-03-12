@@ -70,35 +70,22 @@ async function getH5PLibraryVersions() {
 
 // Function to update library versions in the system prompt
 function updateSystemPrompt(basePrompt, libraryVersions) {
-  // First, extract all library version references from the prompt
-  const libraryPattern = /(H5P\.[a-zA-Z]+)\s+(\d+\.\d+)/g;
   let updatedPrompt = basePrompt;
   
-  // Replace each library version in the prompt
-  let match;
-  while ((match = libraryPattern.exec(basePrompt)) !== null) {
-    const [fullMatch, libName, oldVersion] = match;
-    if (libraryVersions[libName]) {
-      const newVersion = libraryVersions[libName];
-      updatedPrompt = updatedPrompt.replace(
-        new RegExp(fullMatch, 'g'), 
-        `${libName} ${newVersion}`
-      );
-    }
-  }
-  
-  // Also update the JSON examples in the prompt
-  const jsonPattern = /"library":\s*"(H5P\.[a-zA-Z]+)\s+(\d+\.\d+)"/g;
-  while ((match = jsonPattern.exec(basePrompt)) !== null) {
-    const [fullMatch, libName, oldVersion] = match;
-    if (libraryVersions[libName]) {
-      const newVersion = libraryVersions[libName];
-      updatedPrompt = updatedPrompt.replace(
-        new RegExp(fullMatch, 'g'),
-        `"library": "${libName} ${newVersion}"`
-      );
-    }
-  }
+  // Update library versions in the content types list and examples
+  Object.entries(libraryVersions).forEach(([library, version]) => {
+    // Update in the SUPPORTED_CONTENT_TYPES section
+    const libraryPattern = new RegExp(`'${library}'`, 'g');
+    updatedPrompt = updatedPrompt.replace(libraryPattern, `'${library} ${version}'`);
+    
+    // Update in JSON examples
+    const jsonLibraryPattern = new RegExp(`"library":\\s*"${library}"`, 'g');
+    updatedPrompt = updatedPrompt.replace(jsonLibraryPattern, `"library": "${library} ${version}"`);
+    
+    // Update nested libraries in examples
+    const nestedLibraryPattern = new RegExp(`"library":\\s*"${library}"`, 'g');
+    updatedPrompt = updatedPrompt.replace(nestedLibraryPattern, `"library": "${library} ${version}"`);
+  });
   
   return updatedPrompt;
 }
@@ -111,26 +98,26 @@ const anthropic = new Anthropic({
 const baseSystemPrompt = `You are an AI assistant specialized in creating H5P content. Your goal is to generate complete, production-ready H5P content in a single response without asking clarifying questions.
 
 SUPPORTED_CONTENT_TYPES:
-1. Multiple Choice ('H5P.MultiChoice 1.16'): A question with multiple answer options where one or more can be correct.
-2. True/False ('H5P.TrueFalse 1.8'): A statement that can be marked as either true or false.
-3. Fill in the Blanks ('H5P.Blanks 1.14'): Text with words removed that the user must fill in.
-4. Interactive Video ('H5P.InteractiveVideo 1.27'): Video with interactive elements at specific timestamps.
-5. Branching Scenario ('H5P.BranchingScenario 1.8'): A complex, non-linear, decision-based content type that creates personalized learning paths.
-6. Drag and Drop ('H5P.DragQuestion 1.14'): Tasks where users drag items to designated drop zones.
-7. Course Presentation ('H5P.CoursePresentation 1.25'): Slide-based presentation with interactive elements.
-8. Question Set ('H5P.QuestionSet 1.20'): A sequence of different question types combined in one set.
-9. Summary ('H5P.Summary 1.10'): Allows users to select correct statements from a list.
-10. Dialog Cards ('H5P.DialogCards 1.8'): Two-sided cards for practicing/memorizing information.
-11. Interactive Book ('H5P.InteractiveBook 1.11'): Multi-chapter content with various activities.
-12. Mark the Words ('H5P.MarkTheWords 1.5'): Users identify specific words in a text by clicking on them.
-13. Flashcards ('H5P.Flashcards 1.5'): Card-based memory and learning exercises.
-14. Image Hotspots ('H5P.ImageHotspots 1.10'): Interactive points on an image that reveal information.
-15. Arithmetic Quiz ('H5P.ArithmeticQuiz 1.1'): Mathematical operations practice with time limits.
-16. Drag Text ('H5P.DragText 1.9'): Text where words are draggable to complete sentences.
-17. Essay ('H5P.Essay 1.5'): Long-form text responses with keyword-based assessment.
-18. Find the Hotspot ('H5P.FindTheHotspot 1.0'): Users must locate specific areas in an image.
-19. Audio ('H5P.Audio 1.5'): Audio files with player controls.
-20. Accordion ('H5P.Accordion 1.0'): Collapsible content panels for organizing information.
+1. Multiple Choice ('H5P.MultiChoice'): A question with multiple answer options where one or more can be correct.
+2. True/False ('H5P.TrueFalse'): A statement that can be marked as either true or false.
+3. Fill in the Blanks ('H5P.Blanks'): Text with words removed that the user must fill in.
+4. Interactive Video ('H5P.InteractiveVideo'): Video with interactive elements at specific timestamps.
+5. Branching Scenario ('H5P.BranchingScenario'): A complex, non-linear, decision-based content type that creates personalized learning paths.
+6. Drag and Drop ('H5P.DragQuestion'): Tasks where users drag items to designated drop zones.
+7. Course Presentation ('H5P.CoursePresentation'): Slide-based presentation with interactive elements.
+8. Question Set ('H5P.QuestionSet'): A sequence of different question types combined in one set.
+9. Summary ('H5P.Summary'): Allows users to select correct statements from a list.
+10. Dialog Cards ('H5P.DialogCards'): Two-sided cards for practicing/memorizing information.
+11. Interactive Book ('H5P.InteractiveBook'): Multi-chapter content with various activities.
+12. Mark the Words ('H5P.MarkTheWords'): Users identify specific words in a text by clicking on them.
+13. Flashcards ('H5P.Flashcards'): Card-based memory and learning exercises.
+14. Image Hotspots ('H5P.ImageHotspots'): Interactive points on an image that reveal information.
+15. Arithmetic Quiz ('H5P.ArithmeticQuiz'): Mathematical operations practice with time limits.
+16. Drag Text ('H5P.DragText'): Text where words are draggable to complete sentences.
+17. Essay ('H5P.Essay'): Long-form text responses with keyword-based assessment.
+18. Find the Hotspot ('H5P.FindTheHotspot'): Users must locate specific areas in an image.
+19. Audio ('H5P.Audio'): Audio files with player controls.
+20. Accordion ('H5P.Accordion'): Collapsible content panels for organizing information.
 
 CONTENT TYPE SELECTION GUIDELINES:
 - For simple quizzes or single questions, use Multiple Choice or True/False
@@ -179,10 +166,80 @@ Key requirements:
 6. Always include complete metadata and behavior settings
 7. For multiple questions, use H5P.QuestionSet as the main library
 
-Default JSON Structure for Question Set:
+Example JSON Structure for Branching Scenario:
 \`\`\`json
 {
-  "library": "H5P.QuestionSet 1.17",
+  "library": "H5P.BranchingScenario",
+  "params": {
+    "metadata": {
+      "title": "Your Title",
+      "license": "U",
+      "authors": [
+        {
+          "name": "Author Name",
+          "role": "Author"
+        }
+      ]
+    },
+    "params": {
+      "branchingScenario": {
+        "content": [
+          {
+            "type": {
+              "library": "H5P.BranchingQuestion",
+              "params": {
+                "branchingQuestion": {
+                  "question": "Your question here",
+                  "alternatives": [
+                    {
+                      "text": "Option 1",
+                      "nextContentId": "1",
+                      "feedbackText": "Feedback for option 1"
+                    },
+                    {
+                      "text": "Option 2",
+                      "nextContentId": "2",
+                      "feedbackText": "Feedback for option 2"
+                    }
+                  ]
+                }
+              }
+            },
+            "contentId": "0",
+            "nextContentId": "-1"
+          },
+          {
+            "type": {
+              "library": "H5P.AdvancedText",
+              "params": {
+                "text": "<p>Your content here</p>"
+              }
+            },
+            "contentId": "1",
+            "nextContentId": "-1"
+          }
+        ],
+        "startScreen": {
+          "startScreenTitle": "Your Title",
+          "startScreenSubtitle": "Optional subtitle"
+        },
+        "endScreens": [
+          {
+            "endScreenTitle": "Completion Title",
+            "endScreenSubtitle": "Optional completion subtitle",
+            "contentId": "-1"
+          }
+        ]
+      }
+    }
+  }
+}
+\`\`\`
+
+Example JSON Structure for Question Set:
+\`\`\`json
+{
+  "library": "H5P.QuestionSet",
   "params": {
     "metadata": {
       "title": "Quiz Title",
@@ -199,7 +256,7 @@ Default JSON Structure for Question Set:
       },
       "questions": [
         {
-          "library": "H5P.MultiChoice 1.14",
+          "library": "H5P.MultiChoice",
           "params": {
             "question": "Your question here",
             "answers": [
@@ -267,7 +324,7 @@ Additional JSON Structures for Other Content Types:
 For True/False:
 \`\`\`json
 {
-  "library": "H5P.TrueFalse 1.8",
+  "library": "H5P.TrueFalse",
   "params": {
     "params": {
       "question": "Is this statement true?",
@@ -297,7 +354,7 @@ For True/False:
 For Fill in the Blanks:
 \`\`\`json
 {
-  "library": "H5P.Blanks 1.14",
+  "library": "H5P.Blanks",
   "params": {
     "params": {
       "text": "Paris is the capital of *France:French Republic*.",
@@ -322,7 +379,7 @@ For Fill in the Blanks:
 For Drag and Drop:
 \`\`\`json
 {
-  "library": "H5P.DragQuestion 1.14",
+  "library": "H5P.DragQuestion",
   "params": {
     "params": {
       "question": {
@@ -369,7 +426,7 @@ For Drag and Drop:
 For Image Hotspots:
 \`\`\`json
 {
-  "library": "H5P.ImageHotspots 1.10",
+  "library": "H5P.ImageHotspots",
   "params": {
     "params": {
       "image": {

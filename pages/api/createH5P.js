@@ -12,11 +12,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'H5P API endpoint not configured' });
     }
 
-    if (!process.env.H5P_API_ENDPOINT.startsWith('https://')) {
-      console.error('H5P_API_ENDPOINT must use HTTPS');
-      return res.status(500).json({ error: 'H5P API endpoint must use HTTPS' });
-    }
-
     console.log('createH5P endpoint called with body:', JSON.stringify(req.body, null, 2));
     
     const { jsonContent } = req.body;
@@ -47,13 +42,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // Validate the content structure based on the library type
-    if (h5pParams.library.startsWith('H5P.QuestionSet')) {
-      if (!h5pParams.params.params?.questions) {
-        console.error('Invalid QuestionSet structure - missing questions array');
+    // Special validation for Branching Scenario
+    if (h5pParams.library.startsWith('H5P.BranchingScenario')) {
+      if (!h5pParams.params.params?.branchingScenario?.content) {
+        console.error('Invalid Branching Scenario structure - missing content array');
         return res.status(400).json({
-          error: 'Invalid QuestionSet structure',
-          details: 'QuestionSet must include questions array'
+          error: 'Invalid Branching Scenario structure',
+          details: 'Branching Scenario must include content array under params.params.branchingScenario'
         });
       }
     }
@@ -73,44 +68,27 @@ export default async function handler(req, res) {
       }
     };
 
-    // Add default QuestionSet settings if not present
-    if (h5pParams.library.startsWith('H5P.QuestionSet')) {
-      requestBody.params.params = {
-        ...requestBody.params.params,
-        progressType: requestBody.params.params.progressType || 'dots',
-        passPercentage: requestBody.params.params.passPercentage || 50,
-        showResults: requestBody.params.params.showResults !== false,
-        randomQuestions: requestBody.params.params.randomQuestions !== false,
-        endGame: {
-          showResultPage: true,
-          showSolutionButton: true,
-          showRetryButton: true,
-          ...requestBody.params.params.endGame
-        },
-        texts: {
-          prevButton: 'Previous',
-          nextButton: 'Next',
-          finishButton: 'Finish',
-          textualProgress: 'Question: @current of @total',
-          questionLabel: 'Question',
-          jumpToQuestion: 'Jump to question %d',
-          readSpeakerProgress: 'Question @current of @total',
-          unansweredText: 'Unanswered',
-          answeredText: 'Answered',
-          currentQuestionText: 'Current question',
-          ...requestBody.params.params.texts
-        }
-      };
+    // Add default Branching Scenario settings if not present
+    if (h5pParams.library.startsWith('H5P.BranchingScenario')) {
+      if (!requestBody.params.params.branchingScenario.startScreen) {
+        requestBody.params.params.branchingScenario.startScreen = {
+          startScreenTitle: requestBody.params.metadata.title,
+          startScreenSubtitle: ''
+        };
+      }
+      if (!requestBody.params.params.branchingScenario.endScreens) {
+        requestBody.params.params.branchingScenario.endScreens = [{
+          endScreenTitle: 'Completed',
+          endScreenSubtitle: '',
+          contentId: '-1'
+        }];
+      }
     }
 
     const apiUrl = `${process.env.H5P_API_ENDPOINT}/h5p/new`;
     console.log('Making request to H5P API:', {
       url: apiUrl,
-      body: JSON.stringify(requestBody, null, 2),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.H5P_API_KEY ? 'present' : 'missing'
-      }
+      body: JSON.stringify(requestBody, null, 2)
     });
 
     // Set timeout to 30 seconds to avoid long-running requests
@@ -120,7 +98,7 @@ export default async function handler(req, res) {
       {
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.H5P_API_KEY
+          ...(process.env.H5P_API_KEY && { 'x-api-key': process.env.H5P_API_KEY })
         },
         timeout: 30000 // 30 second timeout
       }
@@ -128,40 +106,36 @@ export default async function handler(req, res) {
     
     console.log('H5P API response:', response.data);
     
-    // Return content ID
-    return res.status(200).json({ 
+    // Return the content ID and API endpoint for embedding
+    return res.status(200).json({
       contentId: response.data.contentId,
       apiEndpoint: process.env.H5P_API_ENDPOINT
     });
+
   } catch (error) {
     console.error('Error creating H5P content:', error);
     
-    // Structure error response
-    const errorResponse = {
-      error: 'Failed to create H5P content',
-      details: error.message,
-      stack: error.stack
-    };
-    
-    // Add response data if available
+    // Handle different types of errors
     if (error.response) {
-      errorResponse.statusCode = error.response.status;
-      errorResponse.responseData = error.response.data;
-      console.error('H5P API error response:', {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      return res.status(error.response.status).json({
+        error: 'H5P API error',
+        details: error.response.data,
+        statusCode: error.response.status
       });
-    }
-
-    // Handle timeout errors specifically
-    if (error.code === 'ECONNABORTED') {
+    } else if (error.request) {
+      // The request was made but no response was received
       return res.status(504).json({
-        error: 'H5P API request timed out',
-        details: 'The request to the H5P API took too long to respond'
+        error: 'H5P API timeout',
+        details: 'No response received from H5P API'
+      });
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      return res.status(500).json({
+        error: 'Internal server error',
+        details: error.message
       });
     }
-    
-    return res.status(500).json(errorResponse);
   }
 } 
