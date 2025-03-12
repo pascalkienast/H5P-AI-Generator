@@ -12,36 +12,36 @@ async function getH5PLibraryVersions() {
     // Create a map of library names to their latest versions
     const libraryVersions = {};
     
-    // Ensure libraries is an array and handle different response formats
-    const libraryList = Array.isArray(libraries) ? libraries : 
-                       typeof libraries === 'object' ? Object.values(libraries) : [];
+    if (Array.isArray(libraries)) {
+      libraries
+        // Only consider runnable libraries
+        .filter(lib => lib.runnable === true)
+        .forEach(lib => {
+          if (lib.machineName && lib.majorVersion && lib.minorVersion) {
+            const name = lib.machineName;
+            const version = `${lib.majorVersion}.${lib.minorVersion}`;
+            
+            // Only update if this is a newer version
+            if (!libraryVersions[name] || version > libraryVersions[name]) {
+              libraryVersions[name] = version;
+            }
+          }
+        });
+    }
     
-    libraryList.forEach(lib => {
-      // Handle different possible formats of library data
-      let name, version;
-      
-      if (typeof lib === 'string') {
-        // If lib is a string like "H5P.QuestionSet 1.20"
-        [name, version] = lib.split(' ');
-      } else if (typeof lib === 'object' && lib !== null) {
-        // If lib is an object with name and version properties
-        name = lib.machineName || lib.name;
-        version = lib.majorVersion + '.' + lib.minorVersion;
-      }
-      
-      if (name && version) {
-        if (!libraryVersions[name] || version > libraryVersions[name]) {
-          libraryVersions[name] = version;
-        }
-      }
-    });
+    // Log the found versions
+    console.log('Found H5P library versions:', libraryVersions);
     
-    console.log('Processed library versions:', libraryVersions);
+    // If no versions were found, throw an error
+    if (Object.keys(libraryVersions).length === 0) {
+      throw new Error('No valid library versions found in API response');
+    }
+    
     return libraryVersions;
   } catch (error) {
     console.error('Error fetching H5P libraries:', error);
     // Return default versions if API call fails
-    return {
+    const defaultVersions = {
       'H5P.MultiChoice': '1.16',
       'H5P.TrueFalse': '1.8',
       'H5P.Blanks': '1.14',
@@ -53,53 +53,52 @@ async function getH5PLibraryVersions() {
       'H5P.Summary': '1.10',
       'H5P.DialogCards': '1.8',
       'H5P.InteractiveBook': '1.11',
-      'H5P.MarkTheWords': '1.5',
+      'H5P.MarkTheWords': '1.11',
       'H5P.Flashcards': '1.5',
       'H5P.ImageHotspots': '1.10',
       'H5P.ArithmeticQuiz': '1.1',
-      'H5P.DragText': '1.9',
+      'H5P.DragText': '1.10',
       'H5P.Essay': '1.5',
       'H5P.FindTheHotspot': '1.0',
       'H5P.Audio': '1.5',
       'H5P.Accordion': '1.0'
     };
+    console.log('Using default library versions:', defaultVersions);
+    return defaultVersions;
   }
 }
 
 // Function to update library versions in the system prompt
 function updateSystemPrompt(basePrompt, libraryVersions) {
-  const versionReplacements = {
-    'H5P.MultiChoice': '1.16',
-    'H5P.TrueFalse': '1.8',
-    'H5P.Blanks': '1.14',
-    'H5P.InteractiveVideo': '1.27',
-    'H5P.BranchingScenario': '1.8',
-    'H5P.DragQuestion': '1.14',
-    'H5P.CoursePresentation': '1.25',
-    'H5P.QuestionSet': '1.20',
-    'H5P.Summary': '1.10',
-    'H5P.DialogCards': '1.8',
-    'H5P.InteractiveBook': '1.11',
-    'H5P.MarkTheWords': '1.5',
-    'H5P.Flashcards': '1.5',
-    'H5P.ImageHotspots': '1.10',
-    'H5P.ArithmeticQuiz': '1.1',
-    'H5P.DragText': '1.9',
-    'H5P.Essay': '1.5',
-    'H5P.FindTheHotspot': '1.0',
-    'H5P.Audio': '1.5',
-    'H5P.Accordion': '1.0'
-  };
-
+  // First, extract all library version references from the prompt
+  const libraryPattern = /(H5P\.[a-zA-Z]+)\s+(\d+\.\d+)/g;
   let updatedPrompt = basePrompt;
   
-  // Update versions in the prompt with actual versions from the server
-  Object.entries(libraryVersions).forEach(([library, version]) => {
-    if (versionReplacements[library]) {
-      const regex = new RegExp(`${library} ${versionReplacements[library]}`, 'g');
-      updatedPrompt = updatedPrompt.replace(regex, `${library} ${version}`);
+  // Replace each library version in the prompt
+  let match;
+  while ((match = libraryPattern.exec(basePrompt)) !== null) {
+    const [fullMatch, libName, oldVersion] = match;
+    if (libraryVersions[libName]) {
+      const newVersion = libraryVersions[libName];
+      updatedPrompt = updatedPrompt.replace(
+        new RegExp(fullMatch, 'g'), 
+        `${libName} ${newVersion}`
+      );
     }
-  });
+  }
+  
+  // Also update the JSON examples in the prompt
+  const jsonPattern = /"library":\s*"(H5P\.[a-zA-Z]+)\s+(\d+\.\d+)"/g;
+  while ((match = jsonPattern.exec(basePrompt)) !== null) {
+    const [fullMatch, libName, oldVersion] = match;
+    if (libraryVersions[libName]) {
+      const newVersion = libraryVersions[libName];
+      updatedPrompt = updatedPrompt.replace(
+        new RegExp(fullMatch, 'g'),
+        `"library": "${libName} ${newVersion}"`
+      );
+    }
+  }
   
   return updatedPrompt;
 }
