@@ -21,11 +21,39 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid JSON content' });
       }
     }
+
+    // Ensure the content has the required structure
+    if (!h5pParams.library || !h5pParams.params) {
+      return res.status(400).json({ 
+        error: 'Invalid H5P content structure',
+        details: 'Content must include library and params fields'
+      });
+    }
+
+    // Format the request body according to H5P API requirements
+    const requestBody = {
+      library: h5pParams.library,
+      params: {
+        metadata: {
+          title: h5pParams.params.metadata?.title || 'Untitled Content',
+          license: h5pParams.params.metadata?.license || 'U',
+          authors: h5pParams.params.metadata?.authors || [],
+          changes: h5pParams.params.metadata?.changes || [],
+          extraTitle: h5pParams.params.metadata?.extraTitle || '',
+        },
+        params: h5pParams.params.params
+      }
+    };
+
+    console.log('Sending request to H5P API:', {
+      url: `${process.env.H5P_API_ENDPOINT}/h5p/new`,
+      body: requestBody
+    });
     
     // Make request to H5P API
     const response = await axios.post(
       `${process.env.H5P_API_ENDPOINT}/h5p/new`,
-      h5pParams,
+      requestBody,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -52,6 +80,7 @@ export default async function handler(req, res) {
     if (error.response) {
       errorResponse.statusCode = error.response.status;
       errorResponse.responseData = error.response.data;
+      console.error('H5P API error response:', error.response.data);
     }
     
     return res.status(500).json(errorResponse);

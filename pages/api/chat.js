@@ -35,12 +35,38 @@ Key requirements:
    {
      "library": "H5P.MultiChoice 1.14",
      "params": {
-       // content parameters here
+       "metadata": {
+         "title": "Quiz Title",
+         "license": "U",
+         "authors": [],
+         "changes": [],
+         "extraTitle": ""
+       },
+       "params": {
+         "question": "Your question here",
+         "answers": [
+           {
+             "text": "Option 1",
+             "correct": true
+           },
+           {
+             "text": "Option 2",
+             "correct": false
+           }
+         ],
+         "behaviour": {
+           "enableRetry": true,
+           "enableSolutionsButton": true,
+           "singlePoint": true,
+           "randomAnswers": true
+         }
+       }
      }
    }
    \`\`\`
 4. Do not ask clarifying questions unless absolutely necessary
 5. Focus on creating high-quality educational content that works immediately
+6. Always include complete metadata and behavior settings
 
 Always structure your response as:
 1. Brief acknowledgment of the request
