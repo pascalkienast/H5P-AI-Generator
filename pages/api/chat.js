@@ -38,6 +38,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       response: response.content,
       hasJson,
+      needsMoreInfo: !hasJson // Add flag to indicate if more info is needed
     });
   } catch (error) {
     console.error('Error calling Anthropic API:', error);

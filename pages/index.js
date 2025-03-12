@@ -11,6 +11,7 @@ export default function Home() {
   const [apiEndpoint, setApiEndpoint] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
   const [step, setStep] = useState('start'); // 'start', 'conversation', 'preview'
+  const [needsMoreInfo, setNeedsMoreInfo] = useState(true);
   
   // Extract JSON from Claude's response
   const extractJsonFromResponse = (responseContent) => {
@@ -70,6 +71,9 @@ export default function Home() {
         { role: 'assistant', content: assistantContent }
       ];
       setMessages(newMessages);
+      
+      // Update if AI needs more info
+      setNeedsMoreInfo(data.needsMoreInfo);
       
       // Check if response contains JSON
       if (data.hasJson) {
@@ -200,18 +204,36 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            <div className="card h-[500px]">
-              <h2 className="text-xl font-semibold mb-4">Conversation</h2>
-              <div className="h-[calc(100%-2rem)]">
-                <ConversationUI
-                  messages={messages}
-                  onSendMessage={sendMessage}
-                  isLoading={isLoading}
-                  onRestart={handleRestart}
-                  isCompleted={isCompleted}
-                />
+            {(needsMoreInfo || isLoading) ? (
+              <div className="card h-[500px]">
+                <h2 className="text-xl font-semibold mb-4">Conversation</h2>
+                <div className="h-[calc(100%-2rem)]">
+                  <ConversationUI
+                    messages={messages}
+                    onSendMessage={sendMessage}
+                    isLoading={isLoading}
+                    onRestart={handleRestart}
+                    isCompleted={isCompleted}
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="card">
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-full max-w-md">
+                    <div className="mb-4 text-center">
+                      <h3 className="text-lg font-medium text-gray-900">Generating H5P Content</h3>
+                      <p className="mt-1 text-sm text-gray-500">Please wait while we create your interactive content...</p>
+                    </div>
+                    <div className="relative pt-1">
+                      <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-primary-200">
+                        <div className="w-full animate-pulse bg-primary-500"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
