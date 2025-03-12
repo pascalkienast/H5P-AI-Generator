@@ -1,31 +1,73 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+// Function to fetch available H5P library versions
+async function getH5PLibraryVersions() {
+  try {
+    const response = await fetch(`${process.env.H5P_API_ENDPOINT}/h5p/libraries`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch H5P libraries: ${response.statusText}`);
+    }
+    const libraries = await response.json();
+    
+    // Create a map of library names to their latest versions
+    const libraryVersions = {};
+    libraries.forEach(lib => {
+      const [name, version] = lib.split(' ');
+      if (!libraryVersions[name] || version > libraryVersions[name]) {
+        libraryVersions[name] = version;
+      }
+    });
+    return libraryVersions;
+  } catch (error) {
+    console.error('Error fetching H5P libraries:', error);
+    throw error;
+  }
+}
+
+// Function to update library versions in the system prompt
+function updateSystemPrompt(basePrompt, libraryVersions) {
+  const versionReplacements = {
+    'H5P.MultiChoice': '1.16',
+    'H5P.TrueFalse': '1.8',
+    'H5P.Blanks': '1.14',
+    'H5P.InteractiveVideo': '1.27',
+    'H5P.BranchingScenario': '1.8',
+    'H5P.DragQuestion': '1.14',
+    'H5P.CoursePresentation': '1.25',
+    'H5P.QuestionSet': '1.20',
+    'H5P.Summary': '1.10',
+    'H5P.DialogCards': '1.8',
+    'H5P.InteractiveBook': '1.11',
+    'H5P.MarkTheWords': '1.5',
+    'H5P.Flashcards': '1.5',
+    'H5P.ImageHotspots': '1.10',
+    'H5P.ArithmeticQuiz': '1.1',
+    'H5P.DragText': '1.9',
+    'H5P.Essay': '1.5',
+    'H5P.FindTheHotspot': '1.0',
+    'H5P.Audio': '1.5',
+    'H5P.Accordion': '1.0'
+  };
+
+  let updatedPrompt = basePrompt;
+  
+  // Update versions in the prompt with actual versions from the server
+  Object.entries(libraryVersions).forEach(([library, version]) => {
+    if (versionReplacements[library]) {
+      const regex = new RegExp(`${library} ${versionReplacements[library]}`, 'g');
+      updatedPrompt = updatedPrompt.replace(regex, `${library} ${version}`);
+    }
+  });
+  
+  return updatedPrompt;
+}
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    const { messages } = req.body;
-    
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: 'Invalid request body' });
-    }
-    
-    console.log('Sending request to Claude with messages:', messages);
-    
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-latest",
-      max_tokens: 4096,
-      messages: messages.map(m => ({
-        role: m.role,
-        content: m.content
-      })),
-      system: `You are an AI assistant specialized in creating H5P content. Your goal is to generate complete, production-ready H5P content in a single response without asking clarifying questions.
+// Base system prompt without version numbers
+const baseSystemPrompt = `You are an AI assistant specialized in creating H5P content. Your goal is to generate complete, production-ready H5P content in a single response without asking clarifying questions.
 
 SUPPORTED_CONTENT_TYPES:
 1. Multiple Choice ('H5P.MultiChoice 1.16'): A question with multiple answer options where one or more can be correct.
@@ -35,7 +77,7 @@ SUPPORTED_CONTENT_TYPES:
 5. Branching Scenario ('H5P.BranchingScenario 1.8'): A complex, non-linear, decision-based content type that creates personalized learning paths.
 6. Drag and Drop ('H5P.DragQuestion 1.14'): Tasks where users drag items to designated drop zones.
 7. Course Presentation ('H5P.CoursePresentation 1.25'): Slide-based presentation with interactive elements.
-8. Question Set ('H5P.QuestionSet 1.17'): A sequence of different question types combined in one set.
+8. Question Set ('H5P.QuestionSet 1.20'): A sequence of different question types combined in one set.
 9. Summary ('H5P.Summary 1.10'): Allows users to select correct statements from a list.
 10. Dialog Cards ('H5P.DialogCards 1.8'): Two-sided cards for practicing/memorizing information.
 11. Interactive Book ('H5P.InteractiveBook 1.11'): Multi-chapter content with various activities.
@@ -341,12 +383,41 @@ IMPORTANT GUIDELINES:
 Always structure your response as:
 1. Brief acknowledgment of the request
 2. Complete H5P content in JSON format as shown above
-3. Short confirmation that the content is ready for use`,
+3. Short confirmation that the content is ready for use`;
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { messages } = req.body;
+    
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Invalid request body' });
+    }
+    
+    // Fetch available H5P library versions
+    const libraryVersions = await getH5PLibraryVersions();
+    console.log('Available H5P library versions:', libraryVersions);
+    
+    // Update system prompt with actual versions
+    const systemPrompt = updateSystemPrompt(baseSystemPrompt, libraryVersions);
+    
+    console.log('Sending request to Claude with messages:', messages);
+    
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-latest",
+      max_tokens: 4096,
+      messages: messages.map(m => ({
+        role: m.role,
+        content: m.content
+      })),
+      system: systemPrompt,
     });
     
     console.log('Claude response:', response);
     
-    // Check if the response contains JSON
     const hasJson = response.content.some(content => 
       content.type === 'text' && content.text.includes('```json')
     );
@@ -356,7 +427,7 @@ Always structure your response as:
     return res.status(200).json({
       response: response.content,
       hasJson,
-      needsMoreInfo: false // Always default to not needing more info
+      needsMoreInfo: false
     });
   } catch (error) {
     console.error('Error in chat API:', error);
