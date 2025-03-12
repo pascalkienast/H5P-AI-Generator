@@ -3,7 +3,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm install
 
 # Rebuild the source code only when needed
 FROM node:18-alpine AS builder
@@ -19,7 +19,8 @@ RUN mkdir -p public
 # Uncomment the following line to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN npm run build
+# Add error checking for the build process
+RUN npm install && npm run build || (echo "Build failed. Check the logs above for more information." && exit 1)
 
 # Production image, copy all the files and run next
 FROM node:18-alpine AS runner
