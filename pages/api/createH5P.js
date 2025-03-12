@@ -6,9 +6,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('createH5P endpoint called with body:', JSON.stringify(req.body, null, 2));
+    
     const { jsonContent } = req.body;
     
     if (!jsonContent) {
+      console.error('Missing JSON content in request');
       return res.status(400).json({ error: 'Missing JSON content' });
     }
     
@@ -16,14 +19,17 @@ export default async function handler(req, res) {
     let h5pParams = jsonContent;
     if (typeof jsonContent === 'string') {
       try {
+        console.log('Parsing JSON string content');
         h5pParams = JSON.parse(jsonContent);
       } catch (err) {
+        console.error('Failed to parse JSON content:', err);
         return res.status(400).json({ error: 'Invalid JSON content' });
       }
     }
 
     // Ensure the content has the required structure
     if (!h5pParams.library || !h5pParams.params) {
+      console.error('Invalid content structure:', h5pParams);
       return res.status(400).json({ 
         error: 'Invalid H5P content structure',
         details: 'Content must include library and params fields'
@@ -33,6 +39,7 @@ export default async function handler(req, res) {
     // Validate the content structure based on the library type
     if (h5pParams.library.startsWith('H5P.QuestionSet')) {
       if (!h5pParams.params.params?.questions) {
+        console.error('Invalid QuestionSet structure - missing questions array');
         return res.status(400).json({
           error: 'Invalid QuestionSet structure',
           details: 'QuestionSet must include questions array'
@@ -85,9 +92,13 @@ export default async function handler(req, res) {
       };
     }
 
-    console.log('Sending request to H5P API:', {
+    console.log('Making request to H5P API:', {
       url: `${process.env.H5P_API_ENDPOINT}/h5p/new`,
-      body: JSON.stringify(requestBody, null, 2)
+      body: JSON.stringify(requestBody, null, 2),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.H5P_API_KEY ? 'present' : 'missing'
+      }
     });
     
     // Make request to H5P API
@@ -102,6 +113,8 @@ export default async function handler(req, res) {
       }
     );
     
+    console.log('H5P API response:', response.data);
+    
     // Return content ID
     return res.status(200).json({ 
       contentId: response.data.contentId,
@@ -113,7 +126,8 @@ export default async function handler(req, res) {
     // Structure error response
     const errorResponse = {
       error: 'Failed to create H5P content',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     };
     
     // Add response data if available
