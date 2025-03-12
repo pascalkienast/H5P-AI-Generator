@@ -30,6 +30,16 @@ export default async function handler(req, res) {
       });
     }
 
+    // Validate the content structure based on the library type
+    if (h5pParams.library.startsWith('H5P.QuestionSet')) {
+      if (!h5pParams.params.params?.questions) {
+        return res.status(400).json({
+          error: 'Invalid QuestionSet structure',
+          details: 'QuestionSet must include questions array'
+        });
+      }
+    }
+
     // Format the request body according to H5P API requirements
     const requestBody = {
       library: h5pParams.library,
@@ -45,9 +55,39 @@ export default async function handler(req, res) {
       }
     };
 
+    // Add default QuestionSet settings if not present
+    if (h5pParams.library.startsWith('H5P.QuestionSet')) {
+      requestBody.params.params = {
+        ...requestBody.params.params,
+        progressType: requestBody.params.params.progressType || 'dots',
+        passPercentage: requestBody.params.params.passPercentage || 50,
+        showResults: requestBody.params.params.showResults !== false,
+        randomQuestions: requestBody.params.params.randomQuestions !== false,
+        endGame: {
+          showResultPage: true,
+          showSolutionButton: true,
+          showRetryButton: true,
+          ...requestBody.params.params.endGame
+        },
+        texts: {
+          prevButton: 'Previous',
+          nextButton: 'Next',
+          finishButton: 'Finish',
+          textualProgress: 'Question: @current of @total',
+          questionLabel: 'Question',
+          jumpToQuestion: 'Jump to question %d',
+          readSpeakerProgress: 'Question @current of @total',
+          unansweredText: 'Unanswered',
+          answeredText: 'Answered',
+          currentQuestionText: 'Current question',
+          ...requestBody.params.params.texts
+        }
+      };
+    }
+
     console.log('Sending request to H5P API:', {
       url: `${process.env.H5P_API_ENDPOINT}/h5p/new`,
-      body: requestBody
+      body: JSON.stringify(requestBody, null, 2)
     });
     
     // Make request to H5P API
@@ -80,7 +120,11 @@ export default async function handler(req, res) {
     if (error.response) {
       errorResponse.statusCode = error.response.status;
       errorResponse.responseData = error.response.data;
-      console.error('H5P API error response:', error.response.data);
+      console.error('H5P API error response:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
     }
     
     return res.status(500).json(errorResponse);

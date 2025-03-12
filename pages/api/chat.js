@@ -33,7 +33,7 @@ Key requirements:
 3. Format the response as valid JSON within a code block, using the exact format:
    \`\`\`json
    {
-     "library": "H5P.MultiChoice 1.14",
+     "library": "H5P.QuestionSet 1.17",
      "params": {
        "metadata": {
          "title": "Quiz Title",
@@ -43,22 +43,70 @@ Key requirements:
          "extraTitle": ""
        },
        "params": {
-         "question": "Your question here",
-         "answers": [
+         "introPage": {
+           "showIntroPage": true,
+           "title": "Quiz Title",
+           "introduction": "Quiz introduction text"
+         },
+         "questions": [
            {
-             "text": "Option 1",
-             "correct": true
-           },
-           {
-             "text": "Option 2",
-             "correct": false
+             "library": "H5P.MultiChoice 1.14",
+             "params": {
+               "question": "Your question here",
+               "answers": [
+                 {
+                   "text": "Option 1",
+                   "correct": true,
+                   "tipsAndFeedback": {
+                     "tip": "",
+                     "chosenFeedback": "Correct!",
+                     "notChosenFeedback": ""
+                   }
+                 },
+                 {
+                   "text": "Option 2",
+                   "correct": false
+                 }
+               ],
+               "behaviour": {
+                 "enableRetry": true,
+                 "enableSolutionsButton": true,
+                 "singlePoint": true,
+                 "randomAnswers": true,
+                 "showSolutionsRequiresInput": true
+               },
+               "l10n": {
+                 "nextQuestion": "Next Question",
+                 "showSolution": "Show Solution",
+                 "retry": "Retry"
+               },
+               "UI": {
+                 "showQuestionNumber": true,
+                 "questionLabel": "Question"
+               }
+             }
            }
          ],
-         "behaviour": {
-           "enableRetry": true,
-           "enableSolutionsButton": true,
-           "singlePoint": true,
-           "randomAnswers": true
+         "progressType": "dots",
+         "passPercentage": 50,
+         "showResults": true,
+         "randomQuestions": true,
+         "endGame": {
+           "showResultPage": true,
+           "showSolutionButton": true,
+           "showRetryButton": true
+         },
+         "texts": {
+           "prevButton": "Previous",
+           "nextButton": "Next",
+           "finishButton": "Finish",
+           "textualProgress": "Question: @current of @total",
+           "questionLabel": "Question",
+           "jumpToQuestion": "Jump to question %d",
+           "readSpeakerProgress": "Question @current of @total",
+           "unansweredText": "Unanswered",
+           "answeredText": "Answered",
+           "currentQuestionText": "Current question"
          }
        }
      }
@@ -67,6 +115,7 @@ Key requirements:
 4. Do not ask clarifying questions unless absolutely necessary
 5. Focus on creating high-quality educational content that works immediately
 6. Always include complete metadata and behavior settings
+7. For multiple questions, use H5P.QuestionSet as the main library
 
 Always structure your response as:
 1. Brief acknowledgment of the request
