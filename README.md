@@ -100,38 +100,57 @@ You can deploy the application on your own server using Node.js:
 
 ### Deploying with Docker
 
-You can also run the application in a Docker container:
+You can also run the application in a Docker container using our production-ready Dockerfile:
 
 1. Create a Dockerfile in the root directory:
    ```dockerfile
-   FROM node:18-alpine AS base
-   
-   # Install dependencies only when needed
-   FROM base AS deps
+   FROM node:18-alpine AS deps
    WORKDIR /app
-   COPY package.json package-lock.json ./
+   
+   # Install dependencies based on the preferred package manager
+   COPY package.json package-lock.json* ./
    RUN npm ci
    
    # Rebuild the source code only when needed
-   FROM base AS builder
+   FROM node:18-alpine AS builder
    WORKDIR /app
    COPY --from=deps /app/node_modules ./node_modules
    COPY . .
+   
+   # Create public directory if it doesn't exist
+   RUN mkdir -p public
+   
+   # Next.js collects completely anonymous telemetry data about general usage.
    ENV NEXT_TELEMETRY_DISABLED 1
+   
    RUN npm run build
    
    # Production image, copy all the files and run next
-   FROM base AS runner
+   FROM node:18-alpine AS runner
    WORKDIR /app
+   
    ENV NODE_ENV production
    ENV NEXT_TELEMETRY_DISABLED 1
    
+   RUN addgroup --system --gid 1001 nodejs
+   RUN adduser --system --uid 1001 nextjs
+   
    COPY --from=builder /app/public ./public
-   COPY --from=builder /app/.next/standalone ./
-   COPY --from=builder /app/.next/static ./.next/static
+   
+   # Set the correct permission for prerender cache
+   RUN mkdir .next
+   RUN chown nextjs:nodejs .next
+   
+   # Automatically leverage output traces to reduce image size
+   COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+   COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+   
+   USER nextjs
    
    EXPOSE 3000
+   
    ENV PORT 3000
+   ENV HOSTNAME "0.0.0.0"
    
    CMD ["node", "server.js"]
    ```
@@ -142,17 +161,79 @@ You can also run the application in a Docker container:
    const nextConfig = {
      reactStrictMode: true,
      output: 'standalone',
-     // other config...
+     async rewrites() {
+       // Only apply rewrites if the H5P_API_ENDPOINT is defined
+       if (process.env.H5P_API_ENDPOINT) {
+         return [
+           // Proxy requests to the H5P API to avoid CORS issues
+           {
+             source: '/h5p-api/:path*',
+             destination: `${process.env.H5P_API_ENDPOINT}/:path*`,
+           },
+         ];
+       }
+       // Return empty array if H5P_API_ENDPOINT is not defined
+       return [];
+     },
    };
    
    module.exports = nextConfig;
    ```
 
-3. Build and run the Docker container:
+3. Create a `.dockerignore` file to optimize build performance:
+   ```
+   # Dependencies
+   node_modules
+   npm-debug.log
+   yarn-debug.log
+   yarn-error.log
+   
+   # Next.js
+   .next
+   out
+   
+   # Misc
+   .git
+   .github
+   .vscode
+   *.md
+   !README.md
+   
+   # Environment variables
+   .env
+   .env.local
+   .env.development.local
+   .env.test.local
+   .env.production.local
+   ```
+
+4. Build and run the Docker container locally:
    ```bash
    docker build -t h5p-ai-generator .
    docker run -p 3000:3000 --env-file .env.local h5p-ai-generator
    ```
+
+### Deploying with Coolify
+
+[Coolify](https://coolify.io/) is an open-source, self-hostable Heroku / Netlify alternative that works perfectly with this application:
+
+1. Push your code to a Git repository (GitHub, GitLab, or Gitea)
+2. In your Coolify dashboard, create a new service
+3. Select "Application" and then choose your repository
+4. Select Docker as the deployment method
+5. Configure the following environment variables:
+   - `ANTHROPIC_API_KEY`: Your Anthropic API key
+   - `H5P_API_ENDPOINT`: Your H5P API endpoint (must include http/https prefix)
+   - `H5P_API_KEY`: Your H5P API key (if required)
+6. Click on "Deploy" to start the deployment process
+
+Coolify will use the Dockerfile in your repository to build and deploy the application.
+
+**Troubleshooting Coolify Deployments:**
+
+- If you encounter deployment errors related to the public directory, ensure your Dockerfile includes `RUN mkdir -p public` in the builder stage
+- Make sure your `next.config.js` handles missing environment variables to avoid "undefined" errors during build
+- For security, run the container as a non-root user as shown in the Dockerfile above
 
 ### Important Production Considerations
 
@@ -160,6 +241,7 @@ You can also run the application in a Docker container:
 2. Set appropriate rate limits for the Anthropic API to control costs
 3. Configure CORS headers if your front-end and API are on different domains
 4. Set up proper monitoring and logging for production environments
+5. Consider using a secure secret management system rather than plain environment variables
 
 ## Technologies Used
 
