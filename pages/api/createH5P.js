@@ -6,6 +6,17 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Validate H5P API endpoint
+    if (!process.env.H5P_API_ENDPOINT) {
+      console.error('H5P_API_ENDPOINT environment variable is not set');
+      return res.status(500).json({ error: 'H5P API endpoint not configured' });
+    }
+
+    if (!process.env.H5P_API_ENDPOINT.startsWith('https://')) {
+      console.error('H5P_API_ENDPOINT must use HTTPS');
+      return res.status(500).json({ error: 'H5P API endpoint must use HTTPS' });
+    }
+
     console.log('createH5P endpoint called with body:', JSON.stringify(req.body, null, 2));
     
     const { jsonContent } = req.body;
@@ -92,24 +103,26 @@ export default async function handler(req, res) {
       };
     }
 
+    const apiUrl = `${process.env.H5P_API_ENDPOINT}/h5p/new`;
     console.log('Making request to H5P API:', {
-      url: `${process.env.H5P_API_ENDPOINT}/h5p/new`,
+      url: apiUrl,
       body: JSON.stringify(requestBody, null, 2),
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': process.env.H5P_API_KEY ? 'present' : 'missing'
       }
     });
-    
-    // Make request to H5P API
+
+    // Set timeout to 30 seconds to avoid long-running requests
     const response = await axios.post(
-      `${process.env.H5P_API_ENDPOINT}/h5p/new`,
+      apiUrl,
       requestBody,
       {
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': process.env.H5P_API_KEY
-        }
+        },
+        timeout: 30000 // 30 second timeout
       }
     );
     
@@ -138,6 +151,14 @@ export default async function handler(req, res) {
         status: error.response.status,
         data: error.response.data,
         headers: error.response.headers
+      });
+    }
+
+    // Handle timeout errors specifically
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({
+        error: 'H5P API request timed out',
+        details: 'The request to the H5P API took too long to respond'
       });
     }
     
