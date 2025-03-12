@@ -1,4 +1,3 @@
-import { AnthropicStream, StreamingTextResponse } from 'ai';
 import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic({
