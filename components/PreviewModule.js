@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function PreviewModule({ contentId, apiEndpoint }) {
+  const { t } = useTranslation();
   const [iframeLoading, setIframeLoading] = useState(true);
   
   const previewUrl = `${apiEndpoint}/h5p/play/${contentId}`;
@@ -9,14 +11,14 @@ export default function PreviewModule({ contentId, apiEndpoint }) {
   return (
     <div className="card">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-800">Generated H5P Module</h2>
+        <h2 className="text-xl font-semibold text-gray-800">{t('generatedModule')}</h2>
         <a 
           href={downloadUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-primary"
         >
-          Download H5P
+          {t('downloadH5P')}
         </a>
       </div>
       

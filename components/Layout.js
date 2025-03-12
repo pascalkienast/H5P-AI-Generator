@@ -1,6 +1,10 @@
 import Head from 'next/head';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Layout({ children, title = 'H5P AI Generator' }) {
+  const { t } = useTranslation();
+
   return (
     <>
       <Head>
@@ -12,7 +16,10 @@ export default function Layout({ children, title = 'H5P AI Generator' }) {
       <div className="min-h-screen flex flex-col">
         <header className="bg-white shadow-sm">
           <div className="container py-4">
-            <h1 className="text-2xl font-bold text-primary-700">H5P AI Generator</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-primary-700">{t('title')}</h1>
+              <LanguageSwitcher />
+            </div>
           </div>
         </header>
         <main className="flex-grow">

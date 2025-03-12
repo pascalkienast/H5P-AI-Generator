@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import ConversationUI from '../components/ConversationUI';
 import PreviewModule from '../components/PreviewModule';
 
 export default function Home() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -133,13 +135,13 @@ export default function Home() {
   };
   
   return (
-    <Layout title="H5P AI Generator">
+    <Layout title={t('title')}>
       <div className="max-w-4xl mx-auto">
         {step === 'start' ? (
           <div className="card">
-            <h1 className="text-2xl font-bold text-center mb-6">Create H5P Content with AI</h1>
+            <h1 className="text-2xl font-bold text-center mb-6">{t('createContent')}</h1>
             <p className="text-gray-600 mb-6 text-center">
-              Describe the interactive content you want to create, and our AI will generate it for you.
+              {t('description')}
             </p>
             
             <form 
@@ -154,50 +156,55 @@ export default function Home() {
             >
               <div>
                 <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-1">
-                  What would you like to create?
+                  {t('whatCreate')}
                 </label>
                 <input
                   type="text"
                   id="prompt"
                   name="prompt"
-                  placeholder="e.g., Create a quiz about European capitals"
+                  placeholder={t('placeholder')}
                   className="input"
                   required
                 />
               </div>
               <button type="submit" className="btn-primary w-full">
-                Start Creating
+                {t('startCreating')}
               </button>
             </form>
             
             <div className="mt-8">
-              <h2 className="text-lg font-semibold mb-2">Supported Content Types:</h2>
+              <h2 className="text-lg font-semibold mb-2">{t('supportedTypes')}</h2>
               <ul className="list-disc pl-5 space-y-1 text-gray-600">
-                <li>Multiple Choice Questions</li>
-                <li>True/False Questions</li>
-                <li>Fill in the Blanks</li>
-                <li>Drag and Drop</li>
-                <li>Image Hotspots</li>
-                <li>Course Presentation</li>
-                <li>Question Set</li>
-                <li>Dialog Cards</li>
-                <li>Mark the Words</li>
-                <li>Flashcards</li>
-                <li>Interactive Video <span className="text-amber-600 text-sm">(warning: may create corrupt files)</span></li>
-                <li>Branching Scenario (complex interactive content)</li>
-                <li>Arithmetic Quiz</li>
-                <li>Drag Text</li>
-                <li>Essay</li>
-                <li>Find the Hotspot</li>
-                <li>Audio</li>
-                <li>Accordion</li>
-                <li>Summary</li>
-                <li>Interactive Book <span className="text-amber-600 text-sm">(complex)</span></li>
+                <li>{t('contentTypes.multipleChoice')}</li>
+                <li>{t('contentTypes.trueFalse')}</li>
+                <li>{t('contentTypes.fillBlanks')}</li>
+                <li>{t('contentTypes.dragDrop')}</li>
+                <li>{t('contentTypes.imageHotspots')}</li>
+                <li>{t('contentTypes.coursePresentation')}</li>
+                <li>{t('contentTypes.questionSet')}</li>
+                <li>{t('contentTypes.dialogCards')}</li>
+                <li>{t('contentTypes.markWords')}</li>
+                <li>{t('contentTypes.flashcards')}</li>
+                <li>
+                  {t('contentTypes.interactiveVideo')} 
+                  <span className="text-amber-600 text-sm">{t('warnings.corruptFiles')}</span>
+                </li>
+                <li>{t('contentTypes.branchingScenario')}</li>
+                <li>{t('contentTypes.arithmeticQuiz')}</li>
+                <li>{t('contentTypes.dragText')}</li>
+                <li>{t('contentTypes.essay')}</li>
+                <li>{t('contentTypes.findHotspot')}</li>
+                <li>{t('contentTypes.audio')}</li>
+                <li>{t('contentTypes.accordion')}</li>
+                <li>{t('contentTypes.summary')}</li>
+                <li>
+                  {t('contentTypes.interactiveBook')} 
+                  <span className="text-amber-600 text-sm">{t('warnings.complex')}</span>
+                </li>
               </ul>
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
-                  <span className="font-medium">Tips:</span> For most educational content, start with Multiple Choice or Question Set. 
-                  Complex types like Branching Scenario or Interactive Video may require additional editing after generation.
+                  <span className="font-medium">{t('tips')}</span> {t('tipsContent')}
                 </p>
               </div>
             </div>
@@ -206,7 +213,7 @@ export default function Home() {
           <div className="grid grid-cols-1 gap-6">
             {(needsMoreInfo || isLoading) ? (
               <div className="card h-[500px]">
-                <h2 className="text-xl font-semibold mb-4">Conversation</h2>
+                <h2 className="text-xl font-semibold mb-4">{t('conversation')}</h2>
                 <div className="h-[calc(100%-2rem)]">
                   <ConversationUI
                     messages={messages}
@@ -222,8 +229,8 @@ export default function Home() {
                 <div className="flex items-center justify-center py-8">
                   <div className="w-full max-w-md">
                     <div className="mb-4 text-center">
-                      <h3 className="text-lg font-medium text-gray-900">Generating H5P Content</h3>
-                      <p className="mt-1 text-sm text-gray-500">Please wait while we create your interactive content...</p>
+                      <h3 className="text-lg font-medium text-gray-900">{t('generating')}</h3>
+                      <p className="mt-1 text-sm text-gray-500">{t('generatingDesc')}</p>
                     </div>
                     <div className="relative pt-1">
                       <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-primary-200">
@@ -237,14 +244,14 @@ export default function Home() {
             
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-                <p className="font-medium">Error</p>
+                <p className="font-medium">{t('error')}</p>
                 <p className="text-sm">{error}</p>
               </div>
             )}
             
             {step === 'preview' && contentId && (
               <div className="card">
-                <h2 className="text-xl font-semibold mb-4">Generated H5P Module</h2>
+                <h2 className="text-xl font-semibold mb-4">{t('generatedModule')}</h2>
                 <PreviewModule contentId={contentId} apiEndpoint={apiEndpoint} />
               </div>
             )}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 
 export default function ConversationUI({ 
@@ -8,6 +9,7 @@ export default function ConversationUI({
   onRestart,
   isCompleted
 }) {
+  const { t } = useTranslation();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
   
@@ -41,9 +43,9 @@ export default function ConversationUI({
               <svg class="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              <p class="font-medium text-blue-700">H5P content has been generated!</p>
+              <p class="font-medium text-blue-700">${t('h5pGenerated')}</p>
             </div>
-            <p class="text-sm text-blue-600 mt-1">The content is ready for preview below. Click "Download H5P" to save the file.</p>
+            <p class="text-sm text-blue-600 mt-1">${t('h5pGeneratedDesc')}</p>
           </div>`
         );
         return cleanedContent;
@@ -108,7 +110,7 @@ export default function ConversationUI({
               onClick={onRestart}
               className="btn-primary w-full"
             >
-              Start New Generation
+              {t('startNew')}
             </button>
           ) : (
             <>
@@ -117,7 +119,7 @@ export default function ConversationUI({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={isLoading || isCompleted}
-                placeholder="Type your message..."
+                placeholder={t('typeMessage')}
                 className="input flex-grow"
               />
               <button 
@@ -125,7 +127,7 @@ export default function ConversationUI({
                 disabled={isLoading || !input.trim() || isCompleted}
                 className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Send
+                {t('send')}
               </button>
             </>
           )}
