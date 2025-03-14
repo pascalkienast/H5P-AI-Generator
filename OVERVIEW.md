@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-The H5P AI Generator is a Next.js application that uses Claude AI to generate interactive H5P content for educational purposes. The app provides a conversational interface where users can describe the educational content they want to create, and the AI guides them through generating customized H5P modules.
+The H5P AI-1 Generator is a Next.js application that uses Claude AI to generate interactive H5P content for educational purposes. The app provides a conversational interface where users can describe the educational content they want to create, and the AI guides them through generating customized H5P modules.
 
 ## Technology Stack
 
