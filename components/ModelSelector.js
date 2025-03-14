@@ -9,6 +9,10 @@ export default function ModelSelector({ selectedModel, setSelectedModel }) {
     const savedModel = localStorage.getItem('aiModelPreference');
     if (savedModel) {
       setSelectedModel(savedModel);
+    } else {
+      // Set mistral-large-instruct as default if no preference exists
+      setSelectedModel('mistral-large-instruct');
+      localStorage.setItem('aiModelPreference', 'mistral-large-instruct');
     }
   }, [setSelectedModel]);
 
@@ -29,8 +33,10 @@ export default function ModelSelector({ selectedModel, setSelectedModel }) {
         onChange={handleModelChange}
         className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
       >
-        <option value="anthropic">Claude</option>
-        <option value="academiccloud">AcademicCloud</option>
+        <option value="mistral-large-instruct">{t('modelSelector.models.mistral')}</option>
+        <option value="llama-3.3-70b-instruct">{t('modelSelector.models.llama')}</option>
+        <option value="qwen-2.5-72b-instruct">{t('modelSelector.models.qwen')}</option>
+        <option value="claude">{t('modelSelector.models.claude')}</option>
       </select>
     </div>
   );

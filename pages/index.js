@@ -15,7 +15,7 @@ export default function Home() {
   const [step, setStep] = useState('start'); // 'start', 'conversation', 'preview'
   const [needsMoreInfo, setNeedsMoreInfo] = useState(true);
   const [currentH5PParams, setCurrentH5PParams] = useState(null);
-  const [selectedModel, setSelectedModel] = useState('anthropic'); // Default to Anthropic
+  const [selectedModel, setSelectedModel] = useState('mistral-large-instruct'); // Default to Mistral
   
   // Extract JSON from Claude's response
   const extractJsonFromResponse = (responseContent) => {

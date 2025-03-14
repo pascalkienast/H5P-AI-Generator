@@ -24,7 +24,13 @@ const resources = {
       "send": "Senden",
       "typeMessage": "Nachricht eingeben...",
       "modelSelector": {
-        "label": "KI-Modell"
+        "label": "KI-Modell",
+        "models": {
+          "mistral": "Mistral Large",
+          "llama": "Llama 3.3 70B",
+          "qwen": "Qwen 2.5 72B",
+          "claude": "Claude 3.5 Sonnet"
+        }
       },
       "contentTypes": {
         "multipleChoice": "Multiple Choice Fragen",
@@ -75,7 +81,13 @@ const resources = {
       "send": "Send",
       "typeMessage": "Type your message...",
       "modelSelector": {
-        "label": "AI Model"
+        "label": "AI Model",
+        "models": {
+          "mistral": "Mistral Large",
+          "llama": "Llama 3.3 70B",
+          "qwen": "Qwen 2.5 72B",
+          "claude": "Claude 3.5 Sonnet"
+        }
       },
       "contentTypes": {
         "multipleChoice": "Multiple Choice Questions",

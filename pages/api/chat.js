@@ -119,7 +119,6 @@ const anthropic = new Anthropic({
 const academicCloudConfig = {
   apiKey: process.env.AI_API_KEY,
   apiEndpoint: process.env.AI_API_ENDPOINT,
-  model: process.env.AI_API_MODEL || 'qwen2.5-72b-instruct',
 };
 
 // Base system prompt without version numbers
@@ -517,7 +516,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, currentH5PParams, modelProvider = 'anthropic' } = req.body;
+    const { messages, currentH5PParams, modelProvider = 'mistral-large-instruct' } = req.body;
     
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Invalid request body' });
@@ -536,15 +535,14 @@ export default async function handler(req, res) {
       systemPrompt = appendCurrentH5PtoPrompt(systemPrompt, currentH5PParams);
     }
     
-    console.log(`Using AI provider: ${modelProvider}`);
+    console.log(`Using AI model: ${modelProvider}`);
     
-    let response;
-    
-    if (modelProvider === 'anthropic') {
+    // Handle Claude API
+    if (modelProvider === 'claude') {
       // Use Anthropic Claude API
-      console.log('Sending request to Claude with messages:', messages);
+      console.log('Sending request to Claude API');
       
-      response = await anthropic.messages.create({
+      const response = await anthropic.messages.create({
         model: "claude-3-5-sonnet-latest",
         max_tokens: 4096,
         messages: messages.map(m => ({
@@ -554,7 +552,7 @@ export default async function handler(req, res) {
         system: systemPrompt,
       });
       
-      console.log('Claude response:', response);
+      console.log('Claude response received');
       
       const hasJson = response.content.some(content => 
         content.type === 'text' && content.text.includes('```json')
@@ -567,9 +565,9 @@ export default async function handler(req, res) {
         hasJson,
         needsMoreInfo: false
       });
-    } else if (modelProvider === 'academiccloud') {
-      // Use AcademicCloud Chat API
-      console.log('Sending request to AcademicCloud Chat API with messages:', messages);
+    } else {
+      // Use AcademicCloud Chat API with the specific model
+      console.log(`Sending request to AcademicCloud Chat API with model: ${modelProvider}`);
       
       // Prepare messages array with system prompt
       const apiMessages = [
@@ -584,9 +582,10 @@ export default async function handler(req, res) {
       const apiResponse = await axios.post(
         academicCloudConfig.apiEndpoint,
         {
-          model: academicCloudConfig.model,
+          model: modelProvider,
           messages: apiMessages,
-          temperature: 0.7
+          temperature: 0.7,
+          max_tokens: 4096
         },
         {
           headers: {
@@ -597,7 +596,7 @@ export default async function handler(req, res) {
         }
       );
       
-      console.log('AcademicCloud response:', apiResponse.data);
+      console.log('AcademicCloud response received');
       
       // Format the response to match the structure expected by the frontend
       const formattedContent = [
@@ -615,8 +614,6 @@ export default async function handler(req, res) {
         hasJson,
         needsMoreInfo: false
       });
-    } else {
-      return res.status(400).json({ error: 'Invalid model provider' });
     }
   } catch (error) {
     console.error('Error in chat API:', error);
