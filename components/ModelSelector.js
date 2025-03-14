@@ -10,9 +10,9 @@ export default function ModelSelector({ selectedModel, setSelectedModel }) {
     if (savedModel) {
       setSelectedModel(savedModel);
     } else {
-      // Set mistral-large-instruct as default if no preference exists
-      setSelectedModel('mistral-large-instruct');
-      localStorage.setItem('aiModelPreference', 'mistral-large-instruct');
+      // Set llama-3.3-70b-instruct as default if no preference exists
+      setSelectedModel('llama-3.3-70b-instruct');
+      localStorage.setItem('aiModelPreference', 'llama-3.3-70b-instruct');
     }
   }, [setSelectedModel]);
 
