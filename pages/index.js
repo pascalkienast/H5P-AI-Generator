@@ -14,6 +14,7 @@ export default function Home() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [step, setStep] = useState('start'); // 'start', 'conversation', 'preview'
   const [needsMoreInfo, setNeedsMoreInfo] = useState(true);
+  const [currentH5PParams, setCurrentH5PParams] = useState(null);
   
   // Extract JSON from Claude's response
   const extractJsonFromResponse = (responseContent) => {
@@ -48,10 +49,16 @@ export default function Home() {
       const updatedMessages = [...messages, newMessage];
       setMessages(updatedMessages);
       
+      // If we have existing H5P content, include it in the message to Claude
+      const messagePayload = {
+        messages: updatedMessages,
+        currentH5PParams: currentH5PParams
+      };
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updatedMessages })
+        body: JSON.stringify(messagePayload)
       });
       
       if (!response.ok) {
@@ -71,8 +78,9 @@ export default function Home() {
       if (jsonContent) {
         console.log('JSON content found, creating H5P content...');
         setNeedsMoreInfo(false);
+        setCurrentH5PParams(jsonContent);
         await createH5PContent(jsonContent);
-        setIsCompleted(true);
+        setIsCompleted(false); // Keep conversation active
       } else {
         console.log('No JSON content found, continuing conversation...');
         setNeedsMoreInfo(true);
@@ -109,9 +117,11 @@ export default function Home() {
       setContentId(data.contentId);
       setApiEndpoint(data.apiEndpoint);
       setStep('preview');
+      setNeedsMoreInfo(false); // New content is created, so we don't need more info
     } catch (err) {
       setError(`Failed to create H5P content: ${err.message}`);
       console.error('Error creating H5P content:', err);
+      setNeedsMoreInfo(true); // If error occurs, we need more info from user
     }
   };
   
@@ -208,36 +218,18 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6">
-            {(needsMoreInfo || isLoading) ? (
-              <div className="card h-[500px]">
-                <h2 className="text-xl font-semibold mb-4">{t('conversation')}</h2>
-                <div className="h-[calc(100%-2rem)]">
-                  <ConversationUI
-                    messages={messages}
-                    onSendMessage={sendMessage}
-                    isLoading={isLoading}
-                    onRestart={handleRestart}
-                    isCompleted={isCompleted}
-                  />
-                </div>
+            <div className="card h-[500px]">
+              <h2 className="text-xl font-semibold mb-4">{t('conversation')}</h2>
+              <div className="h-[calc(100%-2rem)]">
+                <ConversationUI
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  isLoading={isLoading}
+                  onRestart={handleRestart}
+                  isCompleted={false}
+                />
               </div>
-            ) : (
-              <div className="card">
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-full max-w-md">
-                    <div className="mb-4 text-center">
-                      <h3 className="text-lg font-medium text-gray-900">{t('generating')}</h3>
-                      <p className="mt-1 text-sm text-gray-500">{t('generatingDesc')}</p>
-                    </div>
-                    <div className="relative pt-1">
-                      <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-primary-200">
-                        <div className="w-full animate-pulse bg-primary-500"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
             
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
@@ -248,7 +240,6 @@ export default function Home() {
             
             {step === 'preview' && contentId && (
               <div className="card">
-                <h2 className="text-xl font-semibold mb-4">{t('generatedModule')}</h2>
                 <PreviewModule contentId={contentId} apiEndpoint={apiEndpoint} />
               </div>
             )}

@@ -90,6 +90,25 @@ function updateSystemPrompt(basePrompt, libraryVersions) {
   return updatedPrompt;
 }
 
+// Append current H5P params to the system prompt if they exist
+function appendCurrentH5PtoPrompt(systemPrompt, currentH5PParams) {
+  if (!currentH5PParams) return systemPrompt;
+  
+  const h5pParamsString = JSON.stringify(currentH5PParams, null, 2);
+  
+  return `${systemPrompt}
+
+## Current H5P Content to Update
+
+The user has already generated an H5P module with the following parameters. They may want to modify or update this content. Use these parameters as a starting point for any changes they request. If they ask for changes, provide the complete updated JSON with the modifications applied.
+
+\`\`\`json
+${h5pParamsString}
+\`\`\`
+
+When the user asks for changes, always respond with a complete updated JSON structure, not just the changed parts. Ensure the output is valid JSON inside a code block.`;
+}
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -489,7 +508,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages } = req.body;
+    const { messages, currentH5PParams } = req.body;
     
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Invalid request body' });
@@ -500,7 +519,13 @@ export default async function handler(req, res) {
     console.log('Available H5P library versions:', libraryVersions);
     
     // Update system prompt with actual versions
-    const systemPrompt = updateSystemPrompt(baseSystemPrompt, libraryVersions);
+    let systemPrompt = updateSystemPrompt(baseSystemPrompt, libraryVersions);
+    
+    // If we have current H5P params, append them to the system prompt
+    if (currentH5PParams) {
+      console.log('Including existing H5P content in system prompt');
+      systemPrompt = appendCurrentH5PtoPrompt(systemPrompt, currentH5PParams);
+    }
     
     console.log('Sending request to Claude with messages:', messages);
     

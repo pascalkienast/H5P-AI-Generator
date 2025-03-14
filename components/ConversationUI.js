@@ -104,7 +104,9 @@ export default function ConversationUI({
       
       <form onSubmit={handleSubmit} className="mt-4">
         <div className="flex gap-2">
-          {isCompleted ? (
+          {isCompleted && !messages.some(msg => 
+            msg.role === 'assistant' && msg.content.includes('```json')
+          ) ? (
             <button 
               type="button" 
               onClick={onRestart}
@@ -118,17 +120,26 @@ export default function ConversationUI({
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                disabled={isLoading || isCompleted}
+                disabled={isLoading}
                 placeholder={t('typeMessage')}
                 className="input flex-grow"
               />
               <button 
                 type="submit" 
-                disabled={isLoading || !input.trim() || isCompleted}
+                disabled={isLoading || !input.trim()}
                 className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('send')}
               </button>
+              {messages.some(msg => msg.role === 'assistant' && msg.content.includes('```json')) && (
+                <button 
+                  type="button" 
+                  onClick={onRestart}
+                  className="btn-secondary"
+                >
+                  {t('startNew')}
+                </button>
+              )}
             </>
           )}
         </div>

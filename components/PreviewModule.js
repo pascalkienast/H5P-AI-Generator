@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function PreviewModule({ contentId, apiEndpoint }) {
@@ -7,6 +7,11 @@ export default function PreviewModule({ contentId, apiEndpoint }) {
   
   const previewUrl = `${apiEndpoint}/h5p/play/${contentId}`;
   const downloadUrl = `${apiEndpoint}/h5p/download/${contentId}`;
+  
+  // Reset loading state when contentId changes
+  useEffect(() => {
+    setIframeLoading(true);
+  }, [contentId]);
   
   return (
     <div className="card">
@@ -30,6 +35,7 @@ export default function PreviewModule({ contentId, apiEndpoint }) {
         )}
         
         <iframe
+          key={contentId}
           src={previewUrl}
           className="w-full"
           style={{ height: '500px', border: 'none' }}
