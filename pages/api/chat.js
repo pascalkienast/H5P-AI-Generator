@@ -516,7 +516,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, currentH5PParams, modelProvider = 'llama-3.3-70b-instruct' } = req.body;
+    const { messages, currentH5PParams, modelProvider = 'deepseek-r1' } = req.body;
     
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Invalid request body' });

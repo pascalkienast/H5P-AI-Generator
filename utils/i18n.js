@@ -26,6 +26,7 @@ const resources = {
       "modelSelector": {
         "label": "KI-Modell",
         "models": {
+          "deepseek": "Deepseek-R1",
           "mistral": "Mistral Large",
           "llama": "Llama 3.3 70B",
           "qwen": "Qwen 2.5 72B",
@@ -83,6 +84,7 @@ const resources = {
       "modelSelector": {
         "label": "AI Model",
         "models": {
+          "deepseek": "Deepseek-R1",
           "mistral": "Mistral Large",
           "llama": "Llama 3.3 70B",
           "qwen": "Qwen 2.5 72B",
