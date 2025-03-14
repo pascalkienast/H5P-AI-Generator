@@ -1,8 +1,9 @@
 import Head from 'next/head';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './LanguageSwitcher';
+import ModelSelector from './ModelSelector';
 
-export default function Layout({ children, title = 'H5P AI Generator' }) {
+export default function Layout({ children, title = 'H5P AI Generator', selectedModel, setSelectedModel }) {
   const { t } = useTranslation();
 
   return (
@@ -18,7 +19,15 @@ export default function Layout({ children, title = 'H5P AI Generator' }) {
           <div className="container py-4">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-primary-700">{t('title')}</h1>
-              <LanguageSwitcher />
+              <div className="flex space-x-4 items-center">
+                {selectedModel && setSelectedModel && (
+                  <ModelSelector 
+                    selectedModel={selectedModel} 
+                    setSelectedModel={setSelectedModel} 
+                  />
+                )}
+                <LanguageSwitcher />
+              </div>
             </div>
           </div>
         </header>
@@ -30,7 +39,7 @@ export default function Layout({ children, title = 'H5P AI Generator' }) {
         <footer className="bg-white border-t">
           <div className="container py-4">
             <p className="text-center text-gray-500 text-sm">
-              Powered by Claude AI and H5P
+              Powered by AI and H5P
             </p>
           </div>
         </footer>

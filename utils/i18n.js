@@ -23,6 +23,9 @@ const resources = {
       "startNew": "Neue Generierung starten",
       "send": "Senden",
       "typeMessage": "Nachricht eingeben...",
+      "modelSelector": {
+        "label": "KI-Modell"
+      },
       "contentTypes": {
         "multipleChoice": "Multiple Choice Fragen",
         "trueFalse": "Wahr/Falsch Fragen",
@@ -71,6 +74,9 @@ const resources = {
       "startNew": "Start New Generation",
       "send": "Send",
       "typeMessage": "Type your message...",
+      "modelSelector": {
+        "label": "AI Model"
+      },
       "contentTypes": {
         "multipleChoice": "Multiple Choice Questions",
         "trueFalse": "True/False Questions",

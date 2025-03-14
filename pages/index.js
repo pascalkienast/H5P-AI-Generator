@@ -15,6 +15,7 @@ export default function Home() {
   const [step, setStep] = useState('start'); // 'start', 'conversation', 'preview'
   const [needsMoreInfo, setNeedsMoreInfo] = useState(true);
   const [currentH5PParams, setCurrentH5PParams] = useState(null);
+  const [selectedModel, setSelectedModel] = useState('anthropic'); // Default to Anthropic
   
   // Extract JSON from Claude's response
   const extractJsonFromResponse = (responseContent) => {
@@ -52,7 +53,8 @@ export default function Home() {
       // If we have existing H5P content, include it in the message to Claude
       const messagePayload = {
         messages: updatedMessages,
-        currentH5PParams: currentH5PParams
+        currentH5PParams: currentH5PParams,
+        modelProvider: selectedModel // Add the selected model to the payload
       };
       
       const response = await fetch('/api/chat', {
@@ -142,7 +144,11 @@ export default function Home() {
   };
   
   return (
-    <Layout title={t('title')}>
+    <Layout 
+      title={t('title')} 
+      selectedModel={selectedModel} 
+      setSelectedModel={setSelectedModel}
+    >
       <div className="max-w-4xl mx-auto">
         {step === 'start' ? (
           <div className="card">

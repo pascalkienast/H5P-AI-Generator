@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import axios from 'axios';
 
 // Function to fetch available H5P library versions
 async function getH5PLibraryVersions() {
@@ -109,9 +110,17 @@ ${h5pParamsString}
 When the user asks for changes, always respond with a complete updated JSON structure, not just the changed parts. Ensure the output is valid JSON inside a code block.`;
 }
 
+// Initialize Anthropic client
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+// Initialize AcademicCloud API configuration
+const academicCloudConfig = {
+  apiKey: process.env.AI_API_KEY,
+  apiEndpoint: process.env.AI_API_ENDPOINT,
+  model: process.env.AI_API_MODEL || 'qwen2.5-72b-instruct',
+};
 
 // Base system prompt without version numbers
 const baseSystemPrompt = `You are an AI assistant specialized in creating H5P content. Your goal is to generate complete, production-ready H5P content in a single response without asking clarifying questions.
@@ -508,7 +517,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, currentH5PParams } = req.body;
+    const { messages, currentH5PParams, modelProvider = 'anthropic' } = req.body;
     
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Invalid request body' });
@@ -527,31 +536,88 @@ export default async function handler(req, res) {
       systemPrompt = appendCurrentH5PtoPrompt(systemPrompt, currentH5PParams);
     }
     
-    console.log('Sending request to Claude with messages:', messages);
+    console.log(`Using AI provider: ${modelProvider}`);
     
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-latest",
-      max_tokens: 4096,
-      messages: messages.map(m => ({
-        role: m.role,
-        content: m.content
-      })),
-      system: systemPrompt,
-    });
+    let response;
     
-    console.log('Claude response:', response);
-    
-    const hasJson = response.content.some(content => 
-      content.type === 'text' && content.text.includes('```json')
-    );
-    
-    console.log('Has JSON:', hasJson);
-    
-    return res.status(200).json({
-      response: response.content,
-      hasJson,
-      needsMoreInfo: false
-    });
+    if (modelProvider === 'anthropic') {
+      // Use Anthropic Claude API
+      console.log('Sending request to Claude with messages:', messages);
+      
+      response = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-latest",
+        max_tokens: 4096,
+        messages: messages.map(m => ({
+          role: m.role,
+          content: m.content
+        })),
+        system: systemPrompt,
+      });
+      
+      console.log('Claude response:', response);
+      
+      const hasJson = response.content.some(content => 
+        content.type === 'text' && content.text.includes('```json')
+      );
+      
+      console.log('Has JSON:', hasJson);
+      
+      return res.status(200).json({
+        response: response.content,
+        hasJson,
+        needsMoreInfo: false
+      });
+    } else if (modelProvider === 'academiccloud') {
+      // Use AcademicCloud Chat API
+      console.log('Sending request to AcademicCloud Chat API with messages:', messages);
+      
+      // Prepare messages array with system prompt
+      const apiMessages = [
+        { role: 'system', content: systemPrompt },
+        ...messages.map(m => ({
+          role: m.role,
+          content: m.content
+        }))
+      ];
+      
+      // Make request to AcademicCloud Chat API
+      const apiResponse = await axios.post(
+        academicCloudConfig.apiEndpoint,
+        {
+          model: academicCloudConfig.model,
+          messages: apiMessages,
+          temperature: 0.7
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${academicCloudConfig.apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        }
+      );
+      
+      console.log('AcademicCloud response:', apiResponse.data);
+      
+      // Format the response to match the structure expected by the frontend
+      const formattedContent = [
+        { type: 'text', text: apiResponse.data.choices[0].message.content }
+      ];
+      
+      const hasJson = formattedContent.some(content => 
+        content.type === 'text' && content.text.includes('```json')
+      );
+      
+      console.log('Has JSON:', hasJson);
+      
+      return res.status(200).json({
+        response: formattedContent,
+        hasJson,
+        needsMoreInfo: false
+      });
+    } else {
+      return res.status(400).json({ error: 'Invalid model provider' });
+    }
   } catch (error) {
     console.error('Error in chat API:', error);
     return res.status(500).json({ error: error.message });
