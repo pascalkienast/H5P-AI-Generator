@@ -38,6 +38,8 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Manages user input and submission
    - Auto-scrolls to keep the latest messages visible
    - Supports restarting the conversation after completion
+   - Displays a "Generate H5P" button in step one when a content type is selected
+   - Disables input when step two is active
 
 2. **PreviewModule.js**: Provides a preview of the generated H5P content.
    - Embeds an iframe showing the H5P content from the API endpoint
@@ -59,6 +61,8 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Supports multiple AI models including Claude, Llama, Mistral, Qwen, and Deepseek
    - Persists model preference in local storage
    - Dynamically communicates selected model to the backend
+   - Implements hydration-safe rendering with client-side detection
+   - Uses the "isMounted" pattern to prevent server/client rendering mismatches
 
 ### Pages
 
@@ -73,6 +77,7 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Passes required data to the ConversationUI and PreviewModule components
    - Manages current H5P parameters for content updates
    - Handles model selection for different AI backends
+   - Tracks the two-step generation process state
 
 ### API Routes
 
@@ -86,6 +91,7 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Provides fallback library versions if API is unavailable
    - Updates system prompts with current library versions
    - Supports appending existing H5P content parameters for updates
+   - Implements separate system prompts for step 1 (content type selection) and step 2 (H5P generation)
 
 2. **createH5P.js**: Handles the creation of H5P content by:
    - Validating the H5P content structure
@@ -96,11 +102,47 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Implements error handling with detailed error messages
    - Sets appropriate timeouts for API requests
 
+## Two-Step Generation Process
+
+The application implements a two-step generation process for H5P content:
+
+### Step 1: Content Type Selection
+- The user describes what they want to create
+- The system prompts the AI to analyze the request and recommend an appropriate H5P content type
+- The AI provides information about the selected content type's capabilities and limitations
+- The user can ask questions or refine their requirements
+- The conversation continues until a content type is selected and understood
+- A "Generate H5P" button appears when a content type is selected
+
+### Step 2: H5P Generation
+- When the user clicks the "Generate H5P" button, the system transitions to step 2
+- A new system prompt is used that focuses on generating the JSON structure for the selected content type
+- The AI creates a complete H5P content structure based on the conversation history
+- The generated structure is sent to the H5P REST API for creation
+- The user can preview and download the resulting H5P module
+- The user can continue refining or start a new generation
+
+Benefits of this two-step approach:
+- More focused guidance at each stage
+- Clearer content type selection before generation
+- Prevents generating content with inappropriate content types
+- Improves overall success rate for complex content types
+
 ## System Prompts
 
 The application uses sophisticated system prompts to guide the AI in generating appropriate H5P content:
 
-### Base System Prompt Structure
+### Base System Prompt Structure for Step 1 (Content Type Selection)
+
+The system prompt focuses on:
+- Content type analysis based on the user's request
+- Detailed explanations of each content type's capabilities and limitations
+- Clear recommendations for the most appropriate content type
+- Guiding the user to select the right content type before proceeding to generation
+- Highlighting key limitations of each content type to set proper expectations
+- No JSON generation at this stage
+
+### Base System Prompt Structure for Step 2 (H5P Generation)
 
 The system prompt in `chat.js` consists of several key sections:
 
@@ -223,26 +265,71 @@ The application supports multiple AI models:
    - User enters a description of the educational content they want to create
    - Application shows supported content types with warnings for complex types
 
-2. **Conversation Phase**:
-   - The application sends the initial prompt to the selected AI model
-   - The AI response is processed and displayed in the conversation UI
-   - User can continue the conversation to refine the content
+2. **Step 1: Content Type Selection**:
+   - The application sends the initial prompt with Step 1 system prompt to the selected AI model
+   - The AI analyzes the request and recommends an appropriate content type
+   - The user can ask questions or refine requirements through conversation
+   - "Generate H5P" button appears when content type is selected
+
+3. **Step 2: H5P Generation**:
+   - User clicks "Generate H5P" to transition to Step 2
+   - The application sends conversation history with Step 2 system prompt to the AI model
+   - The AI generates complete H5P JSON structure
    - The application extracts JSON when it appears in the AI's response
 
-3. **Content Creation**:
+4. **Content Creation**:
    - When valid JSON content is detected, it's sent to the H5P REST API
    - Special validation and enhancements are applied for complex content types
    - Default parameters are added when necessary
 
-4. **Preview and Download**:
+5. **Preview and Download**:
    - Successfully created content is displayed in an iframe
    - User can download the H5P file or continue refining the content
    - Content ID and other metadata is displayed for reference
 
-5. **Content Updates**:
+6. **Content Updates**:
    - For existing content, current parameters are included in the system prompt
    - The AI generates an updated version based on user requests
    - Updated content replaces the previous version in the preview
+
+## Hydration Error Handling
+
+The application implements specific techniques to prevent React hydration errors with internationalization:
+
+1. **Consistent Initial Language**: Uses a fixed initial language for server-side rendering
+   ```javascript
+   const getInitialLanguage = () => {
+     // When running on server, always use default language
+     if (typeof window === 'undefined') {
+       return 'de'; // German as default
+     }
+     // ...client-side logic
+   };
+   ```
+
+2. **Safe localStorage Access**: Wraps client-side storage in try-catch for safety
+   ```javascript
+   try {
+     const savedLanguage = localStorage.getItem('i18nextLng');
+     // ...
+   } catch (error) {
+     console.warn('localStorage not available:', error);
+   }
+   ```
+
+3. **Deferred Rendering Pattern**: Uses the "isMounted" pattern to prevent hydration mismatches
+   ```javascript
+   const [isMounted, setIsMounted] = useState(false);
+   
+   useEffect(() => {
+     setIsMounted(true);
+     // ...client-side only code
+   }, []);
+   
+   if (!isMounted) {
+     return <StaticFallbackUI />;
+   }
+   ```
 
 ## JSON Extraction and Processing
 
@@ -296,6 +383,11 @@ The application implements several layers of error handling:
    - Visual indication of errors to users
    - Option to retry or modify content when errors occur
    - Loading states to indicate processing
+
+5. **Hydration Error Prevention**:
+   - Client-side only rendering for components with potential mismatches
+   - Safe localStorage access patterns
+   - Consistent initial state between server and client rendering
 
 ## Internationalization
 
@@ -352,6 +444,9 @@ The main page implements the core application logic:
 - Error handling with user-friendly messages
 - Loading state management for responsive UI feedback
 - Model selection and persistence
+- Two-step generation state tracking:
+  - Step 1: Content type selection state
+  - Step 2: H5P generation state
 
 ### API Integration (api/chat.js)
 
@@ -364,6 +459,8 @@ This endpoint:
 - Implements fallback mechanisms for API failures
 - Logs detailed information for debugging purposes
 - Supports multiple AI model providers
+- Implements separate system prompts for each step of the generation process
+- Passes conversation history between steps
 
 ### H5P Creation (api/createH5P.js)
 
