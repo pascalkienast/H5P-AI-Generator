@@ -7,7 +7,7 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
 ## Technology Stack
 
 - **Frontend**: Next.js, React, Tailwind CSS
-- **AI Integration**: Anthropic Claude API
+- **AI Integration**: Anthropic Claude API, AcademicCloud API (supporting multiple AI models)
 - **Backend**: Next.js API Routes
 - **Internationalization**: i18next
 - **HTTP Client**: Axios
@@ -23,6 +23,7 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
 ├── public/                # Static assets
 ├── styles/                # CSS and styling files
 ├── utils/                 # Utility functions
+├── content-typ-structures/ # H5P content type templates
 └── .env.local             # Environment variables
 ```
 
@@ -48,10 +49,16 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Provides consistent header and footer across the application
    - Includes responsive design elements
    - Contains the LanguageSwitcher component
+   - Incorporates the ModelSelector component for AI model selection
 
 4. **LanguageSwitcher.js**: Allows users to switch between different languages.
    - Currently supports English and German
    - Persists language choice using browser detection
+
+5. **ModelSelector.js**: Enables selection between different AI models.
+   - Supports multiple AI models including Claude, Llama, Mistral, Qwen, and Deepseek
+   - Persists model preference in local storage
+   - Dynamically communicates selected model to the backend
 
 ### Pages
 
@@ -64,6 +71,8 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Extracts structured JSON from Claude's responses to create H5P content
    - Handles error states and loading states
    - Passes required data to the ConversationUI and PreviewModule components
+   - Manages current H5P parameters for content updates
+   - Handles model selection for different AI backends
 
 ### API Routes
 
@@ -72,14 +81,11 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Processing user messages
    - Streaming responses from the AI
    - Formatting content for H5P generation
-   - Contains detailed guidelines for Claude about:
-     - 20 supported H5P content types with descriptions
-     - Content type selection guidelines
-     - Known issues with complex H5P types
-     - Default recommendations for different educational scenarios
+   - Supports multiple AI model providers (Claude and AcademicCloud API)
    - Dynamically fetches available H5P library versions from the H5P REST API
    - Provides fallback library versions if API is unavailable
-   - Handles streaming API responses for a better user experience
+   - Updates system prompts with current library versions
+   - Supports appending existing H5P content parameters for updates
 
 2. **createH5P.js**: Handles the creation of H5P content by:
    - Validating the H5P content structure
@@ -90,40 +96,206 @@ The H5P AI Generator is a Next.js application that uses Claude AI to generate in
    - Implements error handling with detailed error messages
    - Sets appropriate timeouts for API requests
 
+## System Prompts
+
+The application uses sophisticated system prompts to guide the AI in generating appropriate H5P content:
+
+### Base System Prompt Structure
+
+The system prompt in `chat.js` consists of several key sections:
+
+1. **Role Definition**: Defines the AI as an H5P content creation specialist
+   ```
+   You are an AI assistant specialized in creating H5P content. Your goal is to generate complete, production-ready H5P content in a single response without asking clarifying questions.
+   ```
+
+2. **Supported Content Types**: Lists 20 supported H5P content types with detailed descriptions
+   ```
+   SUPPORTED_CONTENT_TYPES:
+   1. Multiple Choice ('H5P.MultiChoice'): A question with multiple answer options where one or more can be correct.
+   2. True/False ('H5P.TrueFalse'): A statement that can be marked as either true or false.
+   ...
+   ```
+
+3. **Content Type Selection Guidelines**: Provides guidance on when to use each content type
+   ```
+   CONTENT TYPE SELECTION GUIDELINES:
+   - For simple quizzes or single questions, use Multiple Choice or True/False
+   - For text-based learning exercises, use Fill in the Blanks or Mark the Words
+   ...
+   ```
+
+4. **Known Issues**: Warns about potential problems with complex content types
+   ```
+   KNOWN ISSUES:
+   - Interactive Video: May sometimes generate content that fails to load properly or create corrupt H5P files
+   - Branching Scenario: Complex structure requires careful planning
+   ...
+   ```
+
+5. **Default Recommendations**: Suggests safer options for various scenarios
+   ```
+   DEFAULT RECOMMENDATIONS:
+   1. For simple, single-topic educational content, start with Multiple Choice, True/False, or Fill in the Blanks
+   2. For most quiz requests, Multiple Choice is the safest and most reliable option
+   ...
+   ```
+
+6. **Process Guidelines**: Outlines how the AI should approach content generation
+   ```
+   PROCESS:
+   1. Ask clarifying questions to understand what the user wants to create.
+   2. Gather specific details about the content, such as:
+      - The subject matter and educational goal
+      - The target audience
+   ...
+   ```
+
+7. **JSON Structure Examples**: Provides detailed examples for various content types
+   ```
+   Example JSON Structure for Branching Scenario:
+   ```json
+   {
+     "library": "H5P.BranchingScenario",
+     "params": {
+       ...
+   ```
+
+8. **Library Version Management**: The system dynamically fetches and updates the H5P library versions
+   ```javascript
+   // Function to fetch available H5P library versions
+   async function getH5PLibraryVersions() {
+     ...
+   }
+
+   // Function to update library versions in the system prompt
+   function updateSystemPrompt(basePrompt, libraryVersions) {
+     ...
+   }
+   ```
+
+9. **Content Update Support**: For existing content, the system adds a special section to guide updates
+   ```javascript
+   function appendCurrentH5PtoPrompt(systemPrompt, currentH5PParams) {
+     return `${systemPrompt}
+
+   ## Current H5P Content to Update
+   
+   The user has already generated an H5P module with the following parameters...`;
+   }
+   ```
+
+## AI Model Integration
+
+The application supports multiple AI models:
+
+1. **Anthropic Claude API**: Primary AI provider with streaming capabilities
+   ```javascript
+   const anthropic = new Anthropic({
+     apiKey: process.env.ANTHROPIC_API_KEY,
+   });
+   ```
+
+2. **AcademicCloud API**: Alternative provider supporting various models:
+   - Deepseek R1
+   - Mistral Large Instruct
+   - Llama 3.3 70B Instruct
+   - Qwen 2.5 72B Instruct
+   ```javascript
+   const academicCloudConfig = {
+     apiKey: process.env.AI_API_KEY,
+     apiEndpoint: process.env.AI_API_ENDPOINT,
+   };
+   ```
+
+3. **Model Selection Interface**: The frontend allows users to select their preferred model
+   ```jsx
+   <ModelSelector 
+     selectedModel={selectedModel} 
+     setSelectedModel={setSelectedModel} 
+   />
+   ```
+
 ## Application Flow
 
-1. User starts by describing the educational content they want to create
-2. The application communicates with Claude via the `/api/chat` endpoint
-3. Claude generates structured H5P content based on the conversation
-4. The generated content is sent to an H5P REST API server via `/api/createH5P`
-5. The user can preview and download the generated H5P module
+1. **Start Screen**: 
+   - User selects an AI model from the dropdown
+   - User enters a description of the educational content they want to create
+   - Application shows supported content types with warnings for complex types
 
-## Key Features
+2. **Conversation Phase**:
+   - The application sends the initial prompt to the selected AI model
+   - The AI response is processed and displayed in the conversation UI
+   - User can continue the conversation to refine the content
+   - The application extracts JSON when it appears in the AI's response
 
-- **Conversational Interface**: Uses a chat-like interface for interacting with Claude AI
-- **Multiple H5P Content Types**: Supports various content types including:
-  - Multiple Choice
-  - True/False
-  - Fill in the Blanks
-  - Interactive Video
-  - Branching Scenario
-  - Drag and Drop
-  - Course Presentation
-  - Question Set
-  - Summary
-  - Dialog Cards
-  - Interactive Book
-  - Mark the Words
-  - Flashcards
-  - Image Hotspots
-  - Arithmetic Quiz
-  - Drag Text
-  - Essay
-  - Find the Hotspot
-  - Audio
-  - Accordion
-- **Preview Capability**: Allows users to preview the H5P content before downloading
-- **Internationalization**: Supports multiple languages through i18next
+3. **Content Creation**:
+   - When valid JSON content is detected, it's sent to the H5P REST API
+   - Special validation and enhancements are applied for complex content types
+   - Default parameters are added when necessary
+
+4. **Preview and Download**:
+   - Successfully created content is displayed in an iframe
+   - User can download the H5P file or continue refining the content
+   - Content ID and other metadata is displayed for reference
+
+5. **Content Updates**:
+   - For existing content, current parameters are included in the system prompt
+   - The AI generates an updated version based on user requests
+   - Updated content replaces the previous version in the preview
+
+## JSON Extraction and Processing
+
+The application implements advanced JSON extraction from AI responses:
+
+```javascript
+const extractJsonFromResponse = (responseContent) => {
+  for (const content of responseContent) {
+    if (content.type === 'text') {
+      const jsonMatch = content.text.match(/```json([\s\S]*?)```/);
+      if (jsonMatch && jsonMatch[1]) {
+        try {
+          const parsedJson = JSON.parse(jsonMatch[1].trim());
+          return parsedJson;
+        } catch (err) {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+};
+```
+
+## Error Handling and Resilience
+
+The application implements several layers of error handling:
+
+1. **API Communication Errors**:
+   - Timeout handling for external API calls
+   - Detailed error logging with context
+   - User-friendly error messages
+
+2. **JSON Validation**:
+   - Parsing error handling for extracted JSON
+   - Structure validation before sending to H5P API
+   - Special validation for complex content types
+
+3. **H5P Library Fallbacks**:
+   - Default library versions when API is unavailable
+   - Graceful degradation when specific services are down
+   ```javascript
+   const defaultVersions = {
+     'H5P.MultiChoice': '1.16',
+     'H5P.TrueFalse': '1.8',
+     ...
+   };
+   ```
+
+4. **UI Error States**:
+   - Visual indication of errors to users
+   - Option to retry or modify content when errors occur
+   - Loading states to indicate processing
 
 ## Internationalization
 
@@ -140,6 +312,7 @@ The translations include:
 - Error messages
 - Tooltips and helper text
 - Detailed descriptions of the 20 H5P content types
+- Model selector options and descriptions
 
 ## Content Type Selection Logic
 
@@ -161,6 +334,8 @@ The application implements sophisticated content type selection logic:
 
 The application requires the following environment variables:
 - `ANTHROPIC_API_KEY`: API key for Anthropic Claude
+- `AI_API_KEY`: API key for AcademicCloud API
+- `AI_API_ENDPOINT`: URL for AcademicCloud API
 - `H5P_API_KEY`: API key for the H5P REST API
 - `H5P_API_ENDPOINT`: URL of the H5P REST API server
 
@@ -176,17 +351,19 @@ The main page implements the core application logic:
 - JSON extraction and parsing to convert Claude's responses into H5P content
 - Error handling with user-friendly messages
 - Loading state management for responsive UI feedback
+- Model selection and persistence
 
 ### API Integration (api/chat.js)
 
 This endpoint:
 - Fetches available H5P library versions
 - Creates detailed system prompts for Claude with library information
-- Manages the conversation with Claude
+- Manages the conversation with Claude and other AI models
 - Handles streaming responses back to the client
 - Provides comprehensive guidance to Claude about content type selection
 - Implements fallback mechanisms for API failures
 - Logs detailed information for debugging purposes
+- Supports multiple AI model providers
 
 ### H5P Creation (api/createH5P.js)
 

@@ -7,7 +7,10 @@ export default function ConversationUI({
   onSendMessage, 
   isLoading, 
   onRestart,
-  isCompleted
+  isCompleted,
+  onGenerateH5P,
+  stepTwoReady = false,
+  contentTypeSelected = false
 }) {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
@@ -102,9 +105,27 @@ export default function ConversationUI({
         <div ref={messagesEndRef} />
       </div>
       
-      <form onSubmit={handleSubmit} className="mt-4">
-        <div className="flex gap-2">
-          {isCompleted && !messages.some(msg => 
+      <div className="mt-4">
+        {contentTypeSelected && !stepTwoReady ? (
+          <div className="flex gap-2">
+            <button 
+              type="button" 
+              onClick={onGenerateH5P}
+              className="btn-primary flex-grow"
+              disabled={isLoading}
+            >
+              {t('generateH5P')}
+            </button>
+            <button 
+              type="button" 
+              onClick={onRestart}
+              className="btn-secondary"
+            >
+              {t('backToStart')}
+            </button>
+          </div>
+        ) : (
+          isCompleted && !messages.some(msg => 
             msg.role === 'assistant' && msg.content.includes('```json')
           ) ? (
             <button 
@@ -115,18 +136,18 @@ export default function ConversationUI({
               {t('startNew')}
             </button>
           ) : (
-            <>
+            <form onSubmit={handleSubmit} className="flex gap-2">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || stepTwoReady}
                 placeholder={t('typeMessage')}
                 className="input flex-grow"
               />
               <button 
                 type="submit" 
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !input.trim() || stepTwoReady}
                 className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('send')}
@@ -140,10 +161,10 @@ export default function ConversationUI({
                   {t('startNew')}
                 </button>
               )}
-            </>
-          )}
-        </div>
-      </form>
+            </form>
+          )
+        )}
+      </div>
     </div>
   );
 } 

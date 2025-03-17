@@ -16,6 +16,9 @@ export default function Home() {
   const [needsMoreInfo, setNeedsMoreInfo] = useState(true);
   const [currentH5PParams, setCurrentH5PParams] = useState(null);
   const [selectedModel, setSelectedModel] = useState('claude'); // Default to Claude
+  const [contentTypeSelected, setContentTypeSelected] = useState(false);
+  const [selectedContentType, setSelectedContentType] = useState(null);
+  const [stepTwoReady, setStepTwoReady] = useState(false);
   
   // Extract JSON from Claude's response
   const extractJsonFromResponse = (responseContent) => {
@@ -39,8 +42,37 @@ export default function Home() {
     console.log('No JSON found in response');
     return null;
   };
+
+  // Extract content type from assistant's response
+  const extractContentType = (assistantMessage) => {
+    // Look for content type mentions in the message
+    const contentTypeKeys = [
+      { key: 'H5P.MultiChoice', name: 'MultiChoice' },
+      { key: 'H5P.TrueFalse', name: 'TrueFalse' },
+      { key: 'H5P.Blanks', name: 'Blanks' },
+      { key: 'H5P.BranchingScenario', name: 'BranchingScenario' },
+      { key: 'H5P.DragQuestion', name: 'DragQuestion' },
+      { key: 'H5P.CoursePresentation', name: 'CoursePresentation' },
+      { key: 'H5P.QuestionSet', name: 'QuestionSet' },
+      { key: 'H5P.Summary', name: 'Summary' },
+      { key: 'H5P.InteractiveBook', name: 'InteractiveBook' },
+      { key: 'H5P.DragText', name: 'DragText' },
+      { key: 'H5P.Accordion', name: 'Accordion' },
+      { key: 'H5P.Questionnaire', name: 'Questionnaire' }
+    ];
+    
+    // Check for explicit contentType mentions
+    for (const type of contentTypeKeys) {
+      if (assistantMessage.includes(type.key) || 
+          assistantMessage.toLowerCase().includes(type.name.toLowerCase())) {
+        return type.key;
+      }
+    }
+    
+    return null;
+  };
   
-  // Send message to Claude
+  // Send message to Claude during step 1
   const sendMessage = async (content) => {
     try {
       setIsLoading(true);
@@ -50,11 +82,12 @@ export default function Home() {
       const updatedMessages = [...messages, newMessage];
       setMessages(updatedMessages);
       
-      // If we have existing H5P content, include it in the message to Claude
+      // Include selected model in the payload
       const messagePayload = {
         messages: updatedMessages,
         currentH5PParams: currentH5PParams,
-        modelProvider: selectedModel // Add the selected model to the payload
+        modelProvider: selectedModel,
+        step: contentTypeSelected ? 'refine' : 'step1' // Indicate this is step 1
       };
       
       const response = await fetch('/api/chat', {
@@ -73,24 +106,83 @@ export default function Home() {
       const assistantMessage = { role: 'assistant', content: data.response[0].text };
       setMessages([...updatedMessages, assistantMessage]);
       
-      // Extract JSON content if present
-      const jsonContent = extractJsonFromResponse(data.response);
-      console.log('Extracted JSON content:', jsonContent);
-      
-      if (jsonContent) {
-        console.log('JSON content found, creating H5P content...');
-        setNeedsMoreInfo(false);
-        setCurrentH5PParams(jsonContent);
-        await createH5PContent(jsonContent);
-        setIsCompleted(false); // Keep conversation active
-      } else {
-        console.log('No JSON content found, continuing conversation...');
-        setNeedsMoreInfo(true);
+      // If this is the first response and we didn't have a content type before
+      if (!contentTypeSelected) {
+        const contentType = extractContentType(assistantMessage.content);
+        if (contentType) {
+          console.log('Content type detected:', contentType);
+          setSelectedContentType(contentType);
+          setContentTypeSelected(true);
+        }
       }
+      
+      // Don't look for JSON in step 1
+      setNeedsMoreInfo(false);
       
     } catch (err) {
       setError(`Failed to send message: ${err.message}`);
       console.error('Error sending message:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Generate H5P content in step 2
+  const generateH5P = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (!selectedContentType) {
+        throw new Error('No content type selected');
+      }
+      
+      // Create a new message for the generation request
+      const generationRequest = `Please generate the H5P JSON structure for the ${selectedContentType} content we've discussed.`;
+      const newMessage = { role: 'user', content: generationRequest };
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      
+      // Prepare payload for step 2
+      const messagePayload = {
+        messages: updatedMessages,
+        currentH5PParams: currentH5PParams,
+        modelProvider: selectedModel,
+        step: 'step2',
+        contentType: selectedContentType
+      };
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messagePayload)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('H5P generation response:', data);
+      
+      const assistantMessage = { role: 'assistant', content: data.response[0].text };
+      setMessages([...updatedMessages, assistantMessage]);
+      
+      // Extract JSON content (it should be there in step 2)
+      const jsonContent = extractJsonFromResponse(data.response);
+      
+      if (jsonContent) {
+        console.log('JSON content found, creating H5P content...');
+        setCurrentH5PParams(jsonContent);
+        await createH5PContent(jsonContent);
+        setStepTwoReady(true);
+      } else {
+        setError('No valid H5P structure found in the response');
+      }
+      
+    } catch (err) {
+      setError(`Failed to generate H5P: ${err.message}`);
+      console.error('Error generating H5P:', err);
     } finally {
       setIsLoading(false);
     }
@@ -130,6 +222,9 @@ export default function Home() {
   // Handle initial message
   const handleStartConversation = (initialPrompt) => {
     setStep('conversation');
+    setContentTypeSelected(false); // Reset for new conversation
+    setSelectedContentType(null);
+    setStepTwoReady(false);
     sendMessage(initialPrompt);
   };
   
@@ -141,6 +236,9 @@ export default function Home() {
     setIsCompleted(false);
     setError(null);
     setStep('start');
+    setContentTypeSelected(false);
+    setSelectedContentType(null);
+    setStepTwoReady(false);
   };
   
   return (
@@ -192,24 +290,16 @@ export default function Home() {
                 <li>{t('contentTypes.trueFalse')}</li>
                 <li>{t('contentTypes.fillBlanks')}</li>
                 <li>{t('contentTypes.dragDrop')}</li>
-                <li>{t('contentTypes.imageHotspots')}</li>
                 <li>{t('contentTypes.coursePresentation')}</li>
                 <li>{t('contentTypes.questionSet')}</li>
-                <li>{t('contentTypes.dialogCards')}</li>
-                <li>{t('contentTypes.markWords')}</li>
-                <li>{t('contentTypes.flashcards')}</li>
-                <li>
-                  {t('contentTypes.interactiveVideo')} 
-                  <span className="text-amber-600 text-sm">{t('warnings.corruptFiles')}</span>
-                </li>
-                <li>{t('contentTypes.branchingScenario')}</li>
-                <li>{t('contentTypes.arithmeticQuiz')}</li>
-                <li>{t('contentTypes.dragText')}</li>
-                <li>{t('contentTypes.essay')}</li>
-                <li>{t('contentTypes.findHotspot')}</li>
-                <li>{t('contentTypes.audio')}</li>
-                <li>{t('contentTypes.accordion')}</li>
                 <li>{t('contentTypes.summary')}</li>
+                <li>{t('contentTypes.dragText')}</li>
+                <li>{t('contentTypes.accordion')}</li>
+                <li>{t('contentTypes.questionnaire')}</li>
+                <li>
+                  {t('contentTypes.branchingScenario')}
+                  <span className="text-amber-600 text-sm">{t('warnings.complex')}</span>
+                </li>
                 <li>
                   {t('contentTypes.interactiveBook')} 
                   <span className="text-amber-600 text-sm">{t('warnings.complex')}</span>
@@ -233,6 +323,9 @@ export default function Home() {
                   isLoading={isLoading}
                   onRestart={handleRestart}
                   isCompleted={false}
+                  onGenerateH5P={generateH5P}
+                  contentTypeSelected={contentTypeSelected}
+                  stepTwoReady={stepTwoReady}
                 />
               </div>
             </div>

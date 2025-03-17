@@ -1,10 +1,13 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function ModelSelector({ selectedModel, setSelectedModel }) {
   const { t } = useTranslation();
+  const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
+    setIsMounted(true);
+    
     // Load saved preference from localStorage if available
     const savedModel = localStorage.getItem('aiModelPreference');
     if (savedModel) {
@@ -21,6 +24,23 @@ export default function ModelSelector({ selectedModel, setSelectedModel }) {
     setSelectedModel(newModel);
     localStorage.setItem('aiModelPreference', newModel);
   };
+
+  // Only show the real content after client-side hydration is complete
+  if (!isMounted) {
+    return (
+      <div className="flex items-center">
+        <label htmlFor="model-selector" className="mr-2 text-sm text-gray-600">
+          AI Model:
+        </label>
+        <select
+          id="model-selector"
+          className="text-sm border border-gray-300 rounded-md px-2 py-1"
+        >
+          <option>Loading...</option>
+        </select>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center">
