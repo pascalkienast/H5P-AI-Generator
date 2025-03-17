@@ -40,11 +40,16 @@ Both the top-level `h5p` object and the `params.metadata` section **must** inclu
   "title": "Fill-in-the-Blanks Example",
   "license": "U",
   "defaultLanguage": "en",
+  "extraTitle": "Fill-in-the-Blanks Example", 
   "mainLibrary": "H5P.Blanks",
   "preloadedDependencies": [
+    {"machineName": "H5P.Image", "majorVersion": 1, "minorVersion": 1},
     {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
-    {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
     {"machineName": "H5P.Question", "majorVersion": 1, "minorVersion": 5},
+    {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
+    {"machineName": "H5P.Transition", "majorVersion": 1, "minorVersion": 0},
+    {"machineName": "H5P.FontIcons", "majorVersion": 1, "minorVersion": 0},
+    {"machineName": "H5P.TextUtilities", "majorVersion": 1, "minorVersion": 3},
     {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
   ]
 }
@@ -58,6 +63,10 @@ The framework requires these dependencies for Blanks functionality:
 - **H5P.Question**: Base question framework
 - **H5P.JoubelUI**: For UI elements
 - **FontAwesome**: For icons
+- **H5P.Image**: For images in content
+- **H5P.Transition**: For animations and transitions
+- **H5P.FontIcons**: For additional icons
+- **H5P.TextUtilities**: For text processing
 
 ## 3. Exercise Structure
 
@@ -65,19 +74,18 @@ The main structure for a Blanks exercise is defined in the `params.params` objec
 
 ```json
 "params": {
-  "text": "H5P stands for *HTML5 Package/HTML5 Packages*. It is used to create *interactive* content.",
+  "text": "<p>Instructions for the fill-in-the-blanks exercise</p>",
   "questions": [
-    "HTML5 Package|HTML5 Packages",
-    "interactive|Interactive"
+    "<p>Paragraph 1 with blanks marked like *this*.</p>",
+    "<p>Paragraph 2 with *another* blank.</p>"
   ],
   "overallFeedback": [
-    {"from": 0, "to": 20, "feedback": "You need more practice!"},
-    {"from": 21, "to": 80, "feedback": "Good effort!"},
-    {"from": 81, "to": 100, "feedback": "Excellent!"}
+    {"from": 0, "to": 100, "feedback": "You got @score of @total blanks correct."}
   ],
-  "showSolutions": "Show solution",
-  "tryAgain": "Retry",
+  "showSolutions": "Show solutions",
+  "tryAgain": "Try again",
   "checkAnswer": "Check",
+  "submitAnswer": "Submit",
   "notFilledOut": "Please fill in all blanks",
   "answerIsCorrect": "':ans' is correct",
   "answerIsWrong": "':ans' is wrong",
@@ -87,6 +95,7 @@ The main structure for a Blanks exercise is defined in the `params.params` objec
   "inputLabel": "Blank input @num of @total",
   "inputHasTipLabel": "Tip available",
   "tipLabel": "Tip",
+  "scoreBarLabel": "You got :num out of :total points",
   "behaviour": {
     "enableRetry": true,
     "enableSolutionsButton": true,
@@ -99,12 +108,12 @@ The main structure for a Blanks exercise is defined in the `params.params` objec
     "confirmRetryDialog": false,
     "acceptSpellingErrors": false
   },
-  "scoringOption": "correct",
+  "a11yCheck": "Check the answers. The responses will be marked as correct, incorrect, or unanswered.",
+  "a11yShowSolution": "Show the solution. The task will be marked with its correct solution.",
+  "a11yRetry": "Retry the task. Reset all responses and start the task over again.",
+  "a11yCheckingModeHeader": "Checking mode",
   "media": {
-    "params": {
-      // Optional media parameters
-    },
-    "library": "H5P.Image 1.1"
+    // Optional media parameters
   },
   "confirmCheck": {
     "header": "Finish?",
@@ -123,49 +132,52 @@ The main structure for a Blanks exercise is defined in the `params.params` objec
 
 ### Key Components:
 
-1. **Text**: The exercise text with blanks marked using asterisks (*word*)
-2. **Questions Array**: List of acceptable answers for each blank, separated by pipe symbols (|)
+1. **Text**: Instructions for the fill-in-the-blanks exercise
+2. **Questions Array**: Array of paragraphs with blanks marked with asterisks (*blank*)
 3. **Behavior Settings**: Controls how the exercise behaves
 4. **UI Text**: Customizable labels for the user interface
 5. **Media**: Optional media to display with the exercise
 6. **Overall Feedback**: Feedback based on score ranges
 7. **Confirmation Dialog Settings**: For check and retry confirmations
+8. **Accessibility (a11y) Settings**: Labels for screen readers and accessibility tools
 
 ## 4. Marking Blanks in Text
 
-Blanks are marked using asterisks in the `text` field:
+Blanks are marked directly in the question paragraphs using asterisks:
 
 ```json
-"text": "The capital of France is *Paris*."
+"questions": [
+  "<p>The capital of France is *Paris*.</p>",
+  "<p>The capital of Italy is *Rome*.</p>"
+]
 ```
 
-For blanks with multiple acceptable answers, you can list them in the `questions` array:
+The `text` field does NOT contain the blanks - it contains instructions for the exercise:
 
 ```json
-"text": "H5P stands for *HTML5 Package*.",
-"questions": [
-  "HTML5 Package|HTML5 Packages|HTML5 package"
-]
+"text": "<p>Fill in the capitals of European countries in the paragraphs below.</p>"
 ```
 
 You can also provide tip text within the blank:
 
 ```json
-"text": "The capital of France is *Paris:The city of lights*."
+"questions": [
+  "<p>The capital of France is *Paris:The city of lights*.</p>"
+]
 ```
 
 ## 5. Questions Array
 
-The `questions` array contains acceptable answers for each blank:
+The `questions` array contains paragraphs with blanks marked with asterisks:
 
 ```json
 "questions": [
-  "answer1|alternative1|alternative2",
-  "answer2|alternative1|alternative2"
+  "<p>First paragraph with *blank1* to fill in.</p>",
+  "<p>Second paragraph with *blank2* to fill in.</p>"
 ]
 ```
 
-Each entry corresponds to a blank in the `text` field, in order of appearance.
+Each entry is a complete paragraph with blanks marked inline. The system automatically extracts the blanks based on the asterisk notation.
 
 ## 6. Behavior Settings
 
@@ -192,17 +204,35 @@ Optional media element to display with the exercise:
 
 ```json
 "media": {
-  "params": {
-    "file": {
-      "path": "images/image.jpg",
-      "mime": "image/jpeg",
-      "copyright": {"license": "U"},
-      "width": 800,
-      "height": 600
+  "type": {
+    "params": {
+      "contentName": "Image",
+      "file": {
+        "path": "images/image.jpg",
+        "mime": "image/jpeg",
+        "width": 800,
+        "height": 600,
+        "copyright": {"license": "U"}
+      },
+      "alt": "Alternative text",
+      "title": "Image title",
+      "decorative": false,
+      "expandImage": "Expand Image",
+      "minimizeImage": "Minimize Image"
     },
-    "alt": "Alternative text"
+    "library": "H5P.Image 1.1",
+    "subContentId": "a3ed0e6c-d9b0-4330-b4fa-9ed3c328d1e5",
+    "metadata": {
+      "title": "Image title",
+      "authors": [{"name": "Author Name", "role": "Author"}],
+      "source": "https://example.com/source",
+      "license": "U",
+      "licenseVersion": "4.0",
+      "contentType": "Image",
+      "changes": []
+    }
   },
-  "library": "H5P.Image 1.1"
+  "disableImageZooming": true
 }
 ```
 
@@ -212,31 +242,38 @@ Define feedback based on score ranges:
 
 ```json
 "overallFeedback": [
+  {"from": 0, "to": 100, "feedback": "You got @score of @total blanks correct."}
+]
+```
+
+You can define multiple ranges:
+
+```json
+"overallFeedback": [
   {"from": 0, "to": 20, "feedback": "You need more practice!"},
   {"from": 21, "to": 80, "feedback": "Good effort!"},
   {"from": 81, "to": 100, "feedback": "Excellent!"}
 ]
 ```
 
-## 9. Scoring Options
+## 9. Accessibility Settings
 
-Control how scoring works:
+Provide text for screen readers and accessibility tools:
 
 ```json
-"scoringOption": "correct" // Options: "correct", "positives", "keywords"
+"a11yCheck": "Check the answers. The responses will be marked as correct, incorrect, or unanswered.",
+"a11yShowSolution": "Show the solution. The task will be marked with its correct solution.",
+"a11yRetry": "Retry the task. Reset all responses and start the task over again.",
+"a11yCheckingModeHeader": "Checking mode"
 ```
-
-- `correct`: Score is based on correct answers only
-- `positives`: Score is based on ratio of correct answers to total answers
-- `keywords`: Score is based on keywords matched
 
 ## 10. Common Issues and Solutions
 
 1. **Issue**: Blanks not being recognized
-   **Solution**: Ensure blanks are properly marked with asterisks `*` in the `text` field
+   **Solution**: Ensure blanks are properly marked with asterisks `*` in the `questions` array paragraphs
 
-2. **Issue**: Alternative answers not being accepted
-   **Solution**: Verify the `questions` array has the correct alternative answers with pipe separators
+2. **Issue**: Text appearing without blanks
+   **Solution**: Make sure to put blanks in the `questions` array paragraphs, not in the `text` field
 
 3. **Issue**: Case sensitivity causing problems
    **Solution**: Set `behaviour.caseSensitive` to false to ignore case differences
@@ -247,23 +284,31 @@ Control how scoring works:
 5. **Issue**: UI buttons not appearing
    **Solution**: Check that `behaviour.enableRetry` and `behaviour.enableSolutionsButton` are set correctly
 
+6. **Issue**: Images not displaying
+   **Solution**: Verify the `media` object has the correct structure and file path
+
 ## 11. Complete Example Structure
 
-Below is a minimal working example:
+Below is a working example based on the actual implementation:
 
 ```json
 {
   "h5p": {
     "embedTypes": ["iframe"],
     "language": "en",
-    "title": "Fill-in-the-Blanks Example",
+    "title": "Fill in the Blanks",
     "license": "U",
     "defaultLanguage": "en",
+    "extraTitle": "Fill in the Blanks",
     "mainLibrary": "H5P.Blanks",
     "preloadedDependencies": [
+      {"machineName": "H5P.Image", "majorVersion": 1, "minorVersion": 1},
       {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
-      {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
       {"machineName": "H5P.Question", "majorVersion": 1, "minorVersion": 5},
+      {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
+      {"machineName": "H5P.Transition", "majorVersion": 1, "minorVersion": 0},
+      {"machineName": "H5P.FontIcons", "majorVersion": 1, "minorVersion": 0},
+      {"machineName": "H5P.TextUtilities", "majorVersion": 1, "minorVersion": 3},
       {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
     ]
   },
@@ -272,23 +317,29 @@ Below is a minimal working example:
     "metadata": {
       "embedTypes": ["iframe"],
       "language": "en",
-      "title": "Fill-in-the-Blanks Example",
+      "title": "Fill in the Blanks",
       "license": "U",
       "defaultLanguage": "en",
+      "extraTitle": "Fill in the Blanks",
       "mainLibrary": "H5P.Blanks",
       "preloadedDependencies": [
+        {"machineName": "H5P.Image", "majorVersion": 1, "minorVersion": 1},
         {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
-        {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
         {"machineName": "H5P.Question", "majorVersion": 1, "minorVersion": 5},
+        {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
+        {"machineName": "H5P.Transition", "majorVersion": 1, "minorVersion": 0},
+        {"machineName": "H5P.FontIcons", "majorVersion": 1, "minorVersion": 0},
+        {"machineName": "H5P.TextUtilities", "majorVersion": 1, "minorVersion": 3},
         {"machineName": "H5P.Blanks", "majorVersion": 1, "minorVersion": 14}
       ]
     },
     "params": {
-      "text": "H5P stands for *HTML5 Package*. It is used to create *interactive* content.",
       "questions": [
-        "HTML5 Package|HTML5 Packages",
-        "interactive|Interactive"
+        "<p>Bilberries <em>(Vaccinium myrtillus)</em>, also known as *blue*berries are edible, nearly black berries found in nutrient-poor soils.</p>",
+        "<p>*Cloud*berries <em>(Rubus chamaemorus)</em> are edible orange berries similar to raspberries or blackberries found in alpine and arctic tundra.</p>",
+        "<p>Redcurrant <em>(Ribes rubrum)</em> are red translucent berries with a diameter of 8–10 mm, and are closely related to its black colored relative *black*currant.</p>"
       ],
+      "text": "<p>Insert the missing words in this text about berries found in Norwegian forests and mountainous regions.</p>",
       "behaviour": {
         "enableRetry": true,
         "enableSolutionsButton": true,
@@ -296,10 +347,74 @@ Below is a minimal working example:
         "caseSensitive": false,
         "showSolutionsRequiresInput": true,
         "separateLines": false,
-        "autoCheck": false,
+        "autoCheck": true,
         "confirmCheckDialog": false,
         "confirmRetryDialog": false,
         "acceptSpellingErrors": false
+      },
+      "showSolutions": "Show solutions",
+      "tryAgain": "Try again",
+      "checkAnswer": "Check",
+      "notFilledOut": "Please fill in all blanks",
+      "answerIsCorrect": "':ans' is correct",
+      "answerIsWrong": "':ans' is wrong",
+      "answeredCorrectly": "Answered correctly",
+      "answeredIncorrectly": "Answered incorrectly",
+      "solutionLabel": "Correct answer:",
+      "inputLabel": "Blank input @num of @total",
+      "inputHasTipLabel": "Tip available",
+      "tipLabel": "Tip",
+      "submitAnswer": "Submit",
+      "scoreBarLabel": "You got :num out of :total points",
+      "a11yCheck": "Check the answers. The responses will be marked as correct, incorrect, or unanswered.",
+      "a11yShowSolution": "Show the solution. The task will be marked with its correct solution.",
+      "a11yRetry": "Retry the task. Reset all responses and start the task over again.",
+      "a11yCheckingModeHeader": "Checking mode",
+      "overallFeedback": [
+        {"from": 0, "to": 100, "feedback": "You got @score of @total blanks correct."}
+      ],
+      "media": {
+        "type": {
+          "params": {
+            "contentName": "Image",
+            "file": {
+              "path": "images/file-wPECdwoc.jpg",
+              "mime": "image/jpeg",
+              "width": 1588,
+              "height": 458,
+              "copyright": {"license": "U"}
+            },
+            "alt": "Image of blueberries",
+            "title": "Image of blueberries",
+            "decorative": false,
+            "expandImage": "Expand Image",
+            "minimizeImage": "Minimize Image"
+          },
+          "library": "H5P.Image 1.1",
+          "subContentId": "a3ed0e6c-d9b0-4330-b4fa-9ed3c328d1e5",
+          "metadata": {
+            "title": "A bucketful of freshly picked bilberries.",
+            "authors": [{"name": "Mikko Muinonen", "role": "Author"}],
+            "source": "https://www.flickr.com/photos/mikeancient/5685771257/",
+            "license": "CC BY-ND",
+            "licenseVersion": "4.0",
+            "contentType": "Image",
+            "changes": []
+          }
+        },
+        "disableImageZooming": true
+      },
+      "confirmCheck": {
+        "header": "Finish ?",
+        "body": "Are you sure you wish to finish ?",
+        "cancelLabel": "Cancel",
+        "confirmLabel": "Finish"
+      },
+      "confirmRetry": {
+        "header": "Retry ?",
+        "body": "Are you sure you wish to retry ?",
+        "cancelLabel": "Cancel",
+        "confirmLabel": "Confirm"
       }
     }
   }
@@ -334,8 +449,7 @@ To automatically check answers when all blanks are filled:
 
 ```json
 "behaviour": {
-  "autoCheck": true,
-  "enableCheckButton": false
+  "autoCheck": true
 }
 ```
 
@@ -344,7 +458,19 @@ To automatically check answers when all blanks are filled:
 Adding tips directly in the text:
 
 ```json
-"text": "The capital of France is *Paris:The city of lights*. The capital of Italy is *Rome:The eternal city*."
+"questions": [
+  "<p>The capital of France is *Paris:The city of lights*.</p>"
+]
+```
+
+### 12.5 Disabling Image Zooming
+
+To prevent users from zooming in on images:
+
+```json
+"media": {
+  "disableImageZooming": true
+}
 ```
 
 ## 13. Summary of Critical Requirements
@@ -353,8 +479,9 @@ For a functioning H5P Blanks exercise, the most critical elements are:
 
 1. **Dual metadata structure**: Both top-level and nested in params
 2. **Complete dependency declarations**: All required libraries declared in both metadata locations
-3. **Text with proper blank marking**: Using asterisks to mark blanks
-4. **Questions array**: Matching the number of blanks in the text
+3. **Questions array with proper blank marking**: Using asterisks to mark blanks within HTML paragraphs
+4. **Text field for instructions**: Contains overall instructions, not the blanks
 5. **Behavior settings**: Properly configured for the intended exercise type
+6. **Accessibility parameters**: Ensure the content is accessible to all users
 
 By following this guide precisely, you can create reliable H5P Fill-in-the-Blanks exercises that function correctly across all devices and platforms. 
