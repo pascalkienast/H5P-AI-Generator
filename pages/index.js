@@ -136,7 +136,13 @@ export default function Home() {
       console.error('Error creating H5P content:', err);
       setNeedsMoreInfo(true); // If error occurs, we need more info from user
       setStepTwoReady(false); // Re-enable the chat input to allow corrections
+      
+      // Return the error so the caller can handle retries
+      return { error: err };
     }
+    
+    // Return success
+    return { success: true };
   };
   
   // Send message to Claude during step 1 or for refinement
@@ -219,7 +225,7 @@ export default function Home() {
   };
   
   // Generate H5P content in step 2
-  const generateH5P = async () => {
+  const generateH5P = async (retryCount = 0) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -228,16 +234,40 @@ export default function Home() {
         throw new Error('No content type selected');
       }
       
-      // Create a new message for the generation request
-      const generationRequest = `Please generate the H5P JSON structure for the ${selectedContentType} content we've discussed.`;
+      // Set a maximum number of retry attempts
+      const MAX_RETRIES = 2;
+      const isRetry = retryCount > 0;
+      
+      // Create a message for the generation request
+      let generationRequest;
+      
+      if (isRetry) {
+        // For retry, include specific instructions about the error
+        generationRequest = `The previous attempt to generate the H5P content had validation errors. Please fix the JSON structure for the ${selectedContentType} content and ensure it follows the correct format. Make sure all required fields are included and properly formatted.`;
+        
+        // Add a user message to show we're retrying
+        const retryMessage = { 
+          role: 'user', 
+          content: t('retryGeneration') 
+        };
+        setMessages(prev => [...prev, retryMessage]);
+      } else {
+        // First attempt - standard message
+        generationRequest = `Please generate the H5P JSON structure for the ${selectedContentType} content we've discussed.`;
+      }
+      
       const newMessage = { role: 'user', content: generationRequest };
       const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
       
-      console.log(`Initiating step 2 (H5P generation) for content type: ${selectedContentType}`);
+      if (!isRetry) {
+        // Only add the message to the chat history on first attempt
+        setMessages(updatedMessages);
+      }
+      
+      console.log(`${isRetry ? 'Retrying' : 'Initiating'} step 2 (H5P generation) for content type: ${selectedContentType} (Attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
       console.log(`Using AI model: ${selectedModel}`);
       
-      // Prepare payload for step 2 - include all messages from step 1 for context
+      // Prepare payload for step 2
       const messagePayload = {
         messages: updatedMessages,
         currentH5PParams: currentH5PParams,
@@ -246,7 +276,7 @@ export default function Home() {
         contentType: selectedContentType
       };
       
-      // Tell the user we're switching to step 2
+      // Tell the user we're in generation mode
       setStepTwoReady(true);
       
       const response = await fetch('/api/chat', {
@@ -268,7 +298,11 @@ export default function Home() {
           role: 'assistant', 
           content: data.response[0].text 
         };
-        setMessages([...updatedMessages, assistantMessage]);
+        
+        // Only add the response to the chat history if it's not a retry or if it's the final retry
+        if (!isRetry || retryCount >= MAX_RETRIES) {
+          setMessages(prev => [...prev, assistantMessage]);
+        }
         
         // Extract JSON content (it should be there in step 2)
         const jsonContent = extractJsonFromResponse(data.response);
@@ -276,10 +310,48 @@ export default function Home() {
         if (jsonContent) {
           console.log('JSON content found, creating H5P content...');
           setCurrentH5PParams(jsonContent);
-          await createH5PContent(jsonContent);
+          const result = await createH5PContent(jsonContent);
+          
+          // If content creation failed and we haven't exceeded max retries, try again
+          if (result.error && retryCount < MAX_RETRIES) {
+            console.log(`H5P content creation failed, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
+            
+            // Add a system message indicating the retry
+            if (retryCount === 0) { // Only show this message on first retry
+              const retryingMessage = { 
+                role: 'assistant', 
+                content: t('retryingGeneration')
+              };
+              setMessages(prev => [...prev, retryingMessage]);
+            }
+            
+            // Wait a moment before retrying to allow UI to update
+            setTimeout(() => {
+              generateH5P(retryCount + 1);
+            }, 1000);
+          }
         } else {
-          setError('No valid H5P structure found in the response. The AI may need more specific instructions.');
-          setStepTwoReady(false); // Allow the user to try again
+          // No JSON found in the response
+          if (retryCount < MAX_RETRIES) {
+            console.log(`No valid JSON found in response, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
+            
+            // Add a system message indicating the retry
+            if (retryCount === 0) { // Only show this message on first retry
+              const retryingMessage = { 
+                role: 'assistant', 
+                content: t('retryingGeneration')
+              };
+              setMessages(prev => [...prev, retryingMessage]);
+            }
+            
+            // Wait a moment before retrying
+            setTimeout(() => {
+              generateH5P(retryCount + 1);
+            }, 1000);
+          } else {
+            setError('No valid H5P structure found after multiple attempts. Please try refining your request or selecting a different content type.');
+            setStepTwoReady(false); // Re-enable the chat input
+          }
         }
       } else {
         throw new Error('Empty response from AI');
@@ -288,9 +360,12 @@ export default function Home() {
     } catch (err) {
       setError(`Failed to generate H5P: ${err.message}`);
       console.error('Error generating H5P:', err);
-      setStepTwoReady(false); // Allow the user to try again if there was an error
+      setStepTwoReady(false); // Re-enable the chat input to allow corrections
     } finally {
-      setIsLoading(false);
+      if (retryCount === 0 || retryCount >= 2) {
+        // Only set loading to false on initial attempt or final retry
+        setIsLoading(false);
+      }
     }
   };
   

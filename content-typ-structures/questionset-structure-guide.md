@@ -1,5 +1,29 @@
 # H5P QuestionSet: Definitive Structure Guide
 
+# ⚠️ CRITICAL STRUCTURAL REQUIREMENTS - READ CAREFULLY ⚠️
+
+**MOST COMMON ERRORS THAT WILL CAUSE COMPLETE FAILURE OF THE H5P MODULE:**
+
+1. **IDENTICAL METADATA REQUIRED**: The `h5p` and `params.metadata` objects **MUST BE 100% IDENTICAL**. This is **NOT OPTIONAL**. Both **MUST** contain:
+   - Identical `preloadedDependencies` arrays with ALL required libraries
+   - Identical `title` and `extraTitle` (both are mandatory and must match)
+   - Identical `mainLibrary` field set to "H5P.QuestionSet"
+   - All other metadata fields must be duplicated exactly
+
+2. **ALL REQUIRED DEPENDENCIES MUST BE INCLUDED**:
+   - **`H5P.Transition`**: REQUIRED for transitions
+   - **`H5P.FontIcons`**: REQUIRED for icons
+   - **`jQuery.ui`**: REQUIRED for interactions
+   - **`EmbeddedJS`**: REQUIRED for functionality
+   - Missing ANY of these will cause failures
+
+3. **VALID UUID-FORMAT SUBCONTENT IDs ONLY**: 
+   - All `subContentId` values **MUST** be proper UUIDs like "7cbc7723-1a41-4f83-b7b0-590f87fda441"
+   - **NEVER** use placeholders like "unique-id-1" or other artificial IDs
+   - Invalid IDs will cause reference errors and broken functionality
+
+---
+
 This document provides a comprehensive, detailed specification for creating properly structured H5P QuestionSet content via the REST API. Following these exact patterns is essential for creating functional quizzes with multiple questions.
 
 ## 1. Top-Level Structure Requirements
@@ -32,7 +56,9 @@ A working H5P QuestionSet **must** maintain this exact top-level structure:
 
 ## 2. Metadata and Dependencies
 
-Both the top-level `h5p` object and the `params.metadata` section **must** include identical information:
+**⚠️ CRITICAL: BOTH METADATA SECTIONS MUST BE 100% IDENTICAL ⚠️**
+
+Both the top-level `h5p` object and the `params.metadata` section **must** include completely identical information. This is a strict requirement of the H5P framework and NOT optional:
 
 ```json
 {
@@ -66,15 +92,17 @@ Both the top-level `h5p` object and the `params.metadata` section **must** inclu
 
 ### Required Dependencies:
 
+**⚠️ ALL OF THESE DEPENDENCIES MUST BE INCLUDED ⚠️**
+
 The framework requires these dependencies for QuestionSet functionality:
 
 - **H5P.QuestionSet**: Main content type
 - **H5P.Question**: Base question framework
 - **H5P.JoubelUI**: For UI elements
-- **H5P.Transition**: For transitions
-- **H5P.FontIcons**: For icons
+- **H5P.Transition**: **REQUIRED** for transitions - **NEVER OMIT THIS**
+- **H5P.FontIcons**: **REQUIRED** for icons - **NEVER OMIT THIS**
 - **FontAwesome**: For additional icons
-- **jQuery.ui**: For UI interactions
+- **jQuery.ui**: **REQUIRED** for UI interactions - **NEVER OMIT THIS**
 - **Question type libraries**: Dependencies for each question type used in the set
 
 Additionally, include specific dependencies for each question type you plan to use:
@@ -84,7 +112,7 @@ Additionally, include specific dependencies for each question type you plan to u
 - **H5P.TrueFalse**: For true/false questions
 - **H5P.DragText**: For text-based drag and drop
 - **H5P.Video** and **flowplayer**: For video content
-- **EmbeddedJS**: For embedded JavaScript functionality
+- **EmbeddedJS**: **REQUIRED** for embedded JavaScript functionality - **NEVER OMIT THIS**
 
 ## 3. QuestionSet Structure
 
@@ -452,6 +480,165 @@ The DragQuestion type is particularly complex, with detailed structure for eleme
 
 7. **Issue**: Drag and drop not functioning properly
    **Solution**: Ensure correctElements contains valid element IDs and dropZones contains valid dropZone IDs
+
+## 10.A. CRITICAL Errors and How to Fix Them
+
+This section provides detailed examples of the most common critical errors that will cause H5P content to fail and explicit instructions on how to fix them.
+
+### 10.A.1 NON-IDENTICAL METADATA (Most Common Fatal Error)
+
+#### ❌ INCORRECT Example:
+```json
+{
+  "h5p": {
+    "embedTypes": ["iframe"],
+    "language": "de",
+    "title": "University of Potsdam Quiz",
+    "license": "CC BY",
+    "licenseVersion": "4.0",
+    "defaultLanguage": "de",
+    "mainLibrary": "H5P.QuestionSet",
+    "preloadedDependencies": [
+      {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
+      {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+      {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6}
+      // Additional dependencies...
+    ]
+  },
+  "params": {
+    "metadata": {
+      "embedTypes": ["iframe"],
+      "language": "de",
+      "title": "University of Potsdam Quiz",
+      "license": "CC BY",
+      "licenseVersion": "4.0",
+      "defaultLanguage": "de"
+      // MISSING mainLibrary and preloadedDependencies!
+    }
+  }
+}
+```
+
+#### ✅ CORRECT Example:
+```json
+{
+  "h5p": {
+    "embedTypes": ["iframe"],
+    "language": "de",
+    "title": "University of Potsdam Quiz",
+    "license": "CC BY",
+    "licenseVersion": "4.0",
+    "defaultLanguage": "de",
+    "extraTitle": "University of Potsdam Quiz",
+    "mainLibrary": "H5P.QuestionSet",
+    "preloadedDependencies": [
+      {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
+      {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+      {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6}
+      // Additional dependencies...
+    ]
+  },
+  "params": {
+    "metadata": {
+      "embedTypes": ["iframe"],
+      "language": "de",
+      "title": "University of Potsdam Quiz",
+      "license": "CC BY",
+      "licenseVersion": "4.0",
+      "defaultLanguage": "de",
+      "extraTitle": "University of Potsdam Quiz",
+      "mainLibrary": "H5P.QuestionSet",
+      "preloadedDependencies": [
+        {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
+        {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+        {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6}
+        // Additional dependencies...
+      ]
+    }
+  }
+}
+```
+
+### 10.A.2 MISSING REQUIRED DEPENDENCIES
+
+#### ❌ INCORRECT Example:
+```json
+"preloadedDependencies": [
+  {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
+  {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+  {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6},
+  {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
+  {"machineName": "H5P.Question", "majorVersion": 1, "minorVersion": 4}
+  // MISSING H5P.Transition, H5P.FontIcons, jQuery.ui, EmbeddedJS!
+]
+```
+
+#### ✅ CORRECT Example:
+```json
+"preloadedDependencies": [
+  {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
+  {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+  {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6},
+  {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
+  {"machineName": "H5P.Question", "majorVersion": 1, "minorVersion": 4},
+  {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+  {"machineName": "jQuery.ui", "majorVersion": 1, "minorVersion": 10},
+  {"machineName": "H5P.Transition", "majorVersion": 1, "minorVersion": 0},
+  {"machineName": "H5P.FontIcons", "majorVersion": 1, "minorVersion": 0},
+  {"machineName": "EmbeddedJS", "majorVersion": 1, "minorVersion": 0}
+]
+```
+
+### 10.A.3 INVALID SUBCONTENT IDs
+
+#### ❌ INCORRECT Example:
+```json
+{
+  "library": "H5P.MultiChoice 1.14",
+  "params": {
+    // question parameters
+  },
+  "subContentId": "unique-id-1", // WRONG: This is not a valid UUID
+  "metadata": {
+    "title": "Standorte der Uni Potsdam"
+  }
+}
+```
+
+#### ✅ CORRECT Example:
+```json
+{
+  "library": "H5P.MultiChoice 1.14",
+  "params": {
+    // question parameters
+  },
+  "subContentId": "7cbc7723-1a41-4f83-b7b0-590f87fda441", // CORRECT: Valid UUID format
+  "metadata": {
+    "title": "Standorte der Uni Potsdam",
+    "extraTitle": "Standorte der Uni Potsdam"
+  }
+}
+```
+
+### 10.A.4 MISSING EXTRATITLE IN METADATA
+
+#### ❌ INCORRECT Example:
+```json
+"metadata": {
+  "title": "University of Potsdam Quiz",
+  "license": "CC BY"
+  // Missing extraTitle!
+}
+```
+
+#### ✅ CORRECT Example:
+```json
+"metadata": {
+  "title": "University of Potsdam Quiz",
+  "license": "CC BY",
+  "extraTitle": "University of Potsdam Quiz" // REQUIRED! Must match title
+}
+```
 
 ## 11. Question Type Specifics
 

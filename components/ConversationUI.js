@@ -38,6 +38,11 @@ export default function ConversationUI({
     (msg.content.includes('```json') || msg.content.includes(t('contentRefinementReady')))
   );
   
+  // Check if we're in retry mode
+  const isRetryingGeneration = messages.some(msg => 
+    msg.content.includes(t('retryingGeneration'))
+  );
+  
   // Helper to format content for display
   const formatContentForDisplay = (content) => {
     try {
@@ -59,6 +64,19 @@ export default function ConversationUI({
         );
         return cleanedContent;
       }
+      
+      // Check if content is a retry message
+      if (content === t('retryingGeneration')) {
+        return `<div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 my-2 rounded">
+          <div class="flex items-center">
+            <svg class="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            <p class="font-medium text-yellow-700">${t('retryingGeneration')}</p>
+          </div>
+        </div>`;
+      }
+      
       return content;
     } catch (error) {
       console.error("Error processing content:", error);
@@ -114,10 +132,13 @@ export default function ConversationUI({
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-gray-200 text-gray-800 rounded-lg rounded-tl-none max-w-[80%] p-4">
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 items-center">
                 <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
                 <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                {isRetryingGeneration && (
+                  <span className="ml-2 text-sm text-gray-600">{t('retryingGeneration')}</span>
+                )}
               </div>
             </div>
           </div>
@@ -174,7 +195,9 @@ export default function ConversationUI({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={isLoading || (stepTwoReady && !isInRefinementMode)}
-              placeholder={stepTwoReady && !isInRefinementMode ? t('generatingContent') : t('typeMessage')}
+              placeholder={stepTwoReady && !isInRefinementMode ? 
+                (isRetryingGeneration ? t('retryingGeneration') : t('generatingContent')) 
+                : t('typeMessage')}
               className="input flex-grow"
             />
             <button 

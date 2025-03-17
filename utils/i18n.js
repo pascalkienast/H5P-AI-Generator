@@ -33,6 +33,8 @@ const resources = {
       "contentRefinementReady": "Ihr H5P-Inhalt wurde erfolgreich generiert und kann unten angezeigt werden. Sie können jetzt Änderungen vorschlagen, um den Inhalt weiter zu verbessern.",
       "contentRefinementMode": "Verbesserungsmodus aktiv",
       "refinementInstructions": "Beschreiben Sie die gewünschten Änderungen am H5P-Inhalt. Die KI wird den Inhalt entsprechend aktualisieren.",
+      "retryGeneration": "Die Struktur hat Validierungsfehler, bitte korrigieren und neu generieren.",
+      "retryingGeneration": "Die vorherige Generierung hatte Fehler. Wir versuchen es automatisch erneut mit einer korrigierten Version...",
       "modelSelector": {
         "label": "KI-Modell",
         "models": {
@@ -101,6 +103,8 @@ const resources = {
       "contentRefinementReady": "Your H5P content has been successfully generated and can be viewed below. You can now suggest changes to further refine the content.",
       "contentRefinementMode": "Refinement Mode Active",
       "refinementInstructions": "Describe the changes you'd like to make to the H5P content. The AI will update the content accordingly.",
+      "retryGeneration": "The structure has validation errors, please correct and regenerate.",
+      "retryingGeneration": "The previous generation had errors. We're automatically retrying with a corrected version...",
       "modelSelector": {
         "label": "AI Model",
         "models": {
