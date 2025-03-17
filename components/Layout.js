@@ -39,7 +39,14 @@ export default function Layout({ children, title = 'H5P AI Generator', selectedM
         <footer className="bg-white border-t">
           <div className="container py-4">
             <p className="text-center text-gray-500 text-sm">
-              Powered by AI and H5P
+              <a 
+                href="https://github.com/pascalkienast/H5P-AI-Generator" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary-500 hover:text-primary-700 transition-colors"
+              >
+                Powered by AI and H5P
+              </a>
             </p>
           </div>
         </footer>
