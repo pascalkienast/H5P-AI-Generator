@@ -167,7 +167,9 @@ Both the top-level `h5p` object and the `params.metadata` section **must** inclu
     {"machineName": "EmbeddedJS", "majorVersion": 1, "minorVersion": 0},
     {"machineName": "H5P.Video", "majorVersion": 1, "minorVersion": 5},
     {"machineName": "flowplayer", "majorVersion": 1, "minorVersion": 0},
-    {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17}
+    {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
+    {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
+    {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6}
   ]
 }
 ```
@@ -269,26 +271,25 @@ Each question in the questions array has its own structure based on its library 
 
 ```json
 {
-  "library": "H5P.DragQuestion 1.13",
+  "library": "H5P.MultiChoice 1.16",
   "params": {
-    // Parameters specific to this library type
-    // (Follows the structure for that content type)
+    "question": "<p>Question text?</p>",
+    "answers": [
+      {"text": "Answer 1", "correct": true},
+      {"text": "Answer 2", "correct": false}
+    ]
   },
   "subContentId": "7cbc7723-1a41-4f83-b7b0-590f87fda441",
   "metadata": {
-    "contentType": "Zuordnungsaufgabe (Drag and Drop)",
-    "license": "U",
-    "title": "Put these appliances into the correct categories",
-    "authors": [],
-    "changes": [],
-    "extraTitle": "Put these appliances into the correct categories"
+    "title": "Question Title",
+    "extraTitle": "Question Title"
   }
 }
 ```
 
 ### Critical Question Requirements:
 
-1. **Library Property**: Specifies the question type and version (e.g., `H5P.DragQuestion 1.13`)
+1. **Library Property**: Specifies the question type and version (e.g., `H5P.MultiChoice 1.16`)
 2. **Params Structure**: Contains parameters specific to that question type
 3. **SubContentId**: Unique identifier for this question within the set
 4. **Metadata**: Additional information about the question (title, license, content type)
@@ -582,7 +583,7 @@ This section provides detailed examples of the most common critical errors that 
     "mainLibrary": "H5P.QuestionSet",
     "preloadedDependencies": [
       {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
-      {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+      {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
       {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6}
       // Additional dependencies...
     ]
@@ -615,7 +616,7 @@ This section provides detailed examples of the most common critical errors that 
     "mainLibrary": "H5P.QuestionSet",
     "preloadedDependencies": [
       {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
-      {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+      {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
       {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6}
       // Additional dependencies...
     ]
@@ -632,7 +633,7 @@ This section provides detailed examples of the most common critical errors that 
       "mainLibrary": "H5P.QuestionSet",
       "preloadedDependencies": [
         {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
-        {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+        {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
         {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6}
         // Additional dependencies...
       ]
@@ -647,7 +648,7 @@ This section provides detailed examples of the most common critical errors that 
 ```json
 "preloadedDependencies": [
   {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
-  {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+  {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
   {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6},
   {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
   {"machineName": "H5P.Question", "majorVersion": 1, "minorVersion": 4}
@@ -659,7 +660,7 @@ This section provides detailed examples of the most common critical errors that 
 ```json
 "preloadedDependencies": [
   {"machineName": "H5P.QuestionSet", "majorVersion": 1, "minorVersion": 17},
-  {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 14},
+  {"machineName": "H5P.MultiChoice", "majorVersion": 1, "minorVersion": 16},
   {"machineName": "H5P.TrueFalse", "majorVersion": 1, "minorVersion": 6},
   {"machineName": "H5P.JoubelUI", "majorVersion": 1, "minorVersion": 3},
   {"machineName": "H5P.Question", "majorVersion": 1, "minorVersion": 4},
@@ -676,7 +677,7 @@ This section provides detailed examples of the most common critical errors that 
 #### ❌ INCORRECT Example:
 ```json
 {
-  "library": "H5P.MultiChoice 1.14",
+  "library": "H5P.MultiChoice 1.16",
   "params": {
     // question parameters
   },
@@ -690,7 +691,7 @@ This section provides detailed examples of the most common critical errors that 
 #### ✅ CORRECT Example:
 ```json
 {
-  "library": "H5P.MultiChoice 1.14",
+  "library": "H5P.MultiChoice 1.16",
   "params": {
     // question parameters
   },
