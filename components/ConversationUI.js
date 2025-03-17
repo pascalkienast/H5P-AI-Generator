@@ -32,6 +32,12 @@ export default function ConversationUI({
     }
   };
   
+  // Check if we're in refinement mode (after content generation)
+  const isInRefinementMode = messages.some(msg => 
+    msg.role === 'assistant' && 
+    (msg.content.includes('```json') || msg.content.includes(t('contentRefinementReady')))
+  );
+  
   // Helper to format content for display
   const formatContentForDisplay = (content) => {
     try {
@@ -63,6 +69,20 @@ export default function ConversationUI({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-grow overflow-auto mb-4 space-y-4">
+        {contentTypeSelected && !stepTwoReady && !isInRefinementMode && (
+          <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded mb-4">
+            <p className="text-green-700 font-medium">{t('contentTypeSelected')}</p>
+            <p className="text-sm text-green-600">{t('readyForGeneration')}</p>
+          </div>
+        )}
+        
+        {isInRefinementMode && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded mb-4">
+            <p className="text-blue-700 font-medium">{t('contentRefinementMode')}</p>
+            <p className="text-sm text-blue-600">{t('refinementInstructions')}</p>
+          </div>
+        )}
+        
         {messages.map((msg, index) => (
           <div 
             key={index} 
@@ -106,63 +126,72 @@ export default function ConversationUI({
       </div>
       
       <div className="mt-4">
-        {contentTypeSelected && !stepTwoReady ? (
-          <div className="flex gap-2">
+        {contentTypeSelected && !stepTwoReady && !isInRefinementMode ? (
+          <div className="flex flex-col gap-2">
             <button 
               type="button" 
               onClick={onGenerateH5P}
-              className="btn-primary flex-grow"
+              className="btn-primary w-full py-3 text-lg font-medium flex items-center justify-center"
               disabled={isLoading}
             >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
               {t('generateH5P')}
+            </button>
+            
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={isLoading}
+                placeholder={t('typeMessage')}
+                className="input flex-grow"
+              />
+              <button 
+                type="submit" 
+                onClick={handleSubmit}
+                disabled={isLoading || !input.trim()}
+                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t('send')}
+              </button>
+            </div>
+            
+            <button 
+              type="button" 
+              onClick={onRestart}
+              className="btn-link text-sm text-gray-600 mt-2"
+            >
+              {t('backToStart')}
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={isLoading || (stepTwoReady && !isInRefinementMode)}
+              placeholder={stepTwoReady && !isInRefinementMode ? t('generatingContent') : t('typeMessage')}
+              className="input flex-grow"
+            />
+            <button 
+              type="submit" 
+              disabled={isLoading || !input.trim() || (stepTwoReady && !isInRefinementMode)}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('send')}
             </button>
             <button 
               type="button" 
               onClick={onRestart}
               className="btn-secondary"
             >
-              {t('backToStart')}
-            </button>
-          </div>
-        ) : (
-          isCompleted && !messages.some(msg => 
-            msg.role === 'assistant' && msg.content.includes('```json')
-          ) ? (
-            <button 
-              type="button" 
-              onClick={onRestart}
-              className="btn-primary w-full"
-            >
               {t('startNew')}
             </button>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={isLoading || stepTwoReady}
-                placeholder={t('typeMessage')}
-                className="input flex-grow"
-              />
-              <button 
-                type="submit" 
-                disabled={isLoading || !input.trim() || stepTwoReady}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t('send')}
-              </button>
-              {messages.some(msg => msg.role === 'assistant' && msg.content.includes('```json')) && (
-                <button 
-                  type="button" 
-                  onClick={onRestart}
-                  className="btn-secondary"
-                >
-                  {t('startNew')}
-                </button>
-              )}
-            </form>
-          )
+          </form>
         )}
       </div>
     </div>

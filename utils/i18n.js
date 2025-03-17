@@ -23,10 +23,16 @@ const resources = {
       "startNew": "Neue Generierung starten",
       "send": "Senden",
       "typeMessage": "Nachricht eingeben...",
+      "generatingContent": "H5P wird generiert...",
       "generateH5P": "H5P generieren",
       "backToStart": "Zurück zur Startseite",
       "h5pGenerated": "H5P-Inhalt generiert",
       "h5pGeneratedDesc": "Der H5P-Inhalt wurde erfolgreich generiert und kann jetzt heruntergeladen werden.",
+      "contentTypeSelected": "Inhaltstyp ausgewählt",
+      "readyForGeneration": "Sie können jetzt weiter Fragen stellen oder auf 'H5P generieren' klicken, um den Inhalt zu erstellen.",
+      "contentRefinementReady": "Ihr H5P-Inhalt wurde erfolgreich generiert und kann unten angezeigt werden. Sie können jetzt Änderungen vorschlagen, um den Inhalt weiter zu verbessern.",
+      "contentRefinementMode": "Verbesserungsmodus aktiv",
+      "refinementInstructions": "Beschreiben Sie die gewünschten Änderungen am H5P-Inhalt. Die KI wird den Inhalt entsprechend aktualisieren.",
       "modelSelector": {
         "label": "KI-Modell",
         "models": {
@@ -85,10 +91,16 @@ const resources = {
       "startNew": "Start New Generation",
       "send": "Send",
       "typeMessage": "Type message...",
+      "generatingContent": "Generating H5P...",
       "generateH5P": "Generate H5P",
       "backToStart": "Back to Start Page",
       "h5pGenerated": "H5P Content Generated",
       "h5pGeneratedDesc": "The H5P content has been successfully generated and is ready for download.",
+      "contentTypeSelected": "Content Type Selected",
+      "readyForGeneration": "You can continue asking questions or click 'Generate H5P' to create your content.",
+      "contentRefinementReady": "Your H5P content has been successfully generated and can be viewed below. You can now suggest changes to further refine the content.",
+      "contentRefinementMode": "Refinement Mode Active",
+      "refinementInstructions": "Describe the changes you'd like to make to the H5P content. The AI will update the content accordingly.",
       "modelSelector": {
         "label": "AI Model",
         "models": {

@@ -61,131 +61,39 @@ export default function Home() {
       { key: 'H5P.Questionnaire', name: 'Questionnaire' }
     ];
     
-    // Check for explicit contentType mentions
-    for (const type of contentTypeKeys) {
-      if (assistantMessage.includes(type.key) || 
-          assistantMessage.toLowerCase().includes(type.name.toLowerCase())) {
-        return type.key;
+    // Check for explicit recommendation phrases
+    const recommendationPhrases = [
+      "I recommend using",
+      "I suggest using",
+      "best choice would be",
+      "most appropriate content type",
+      "recommend the"
+    ];
+    
+    let contentType = null;
+    
+    // First check for clear recommendations
+    for (const phrase of recommendationPhrases) {
+      if (assistantMessage.includes(phrase)) {
+        // If we found a recommendation phrase, check for content types nearby
+        for (const type of contentTypeKeys) {
+          if (assistantMessage.includes(type.key)) {
+            console.log(`Found recommendation for ${type.key} with phrase "${phrase}"`);
+            return type.key;
+          }
+        }
       }
     }
     
-    return null;
-  };
-  
-  // Send message to Claude during step 1
-  const sendMessage = async (content) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const newMessage = { role: 'user', content };
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      
-      // Include selected model in the payload
-      const messagePayload = {
-        messages: updatedMessages,
-        currentH5PParams: currentH5PParams,
-        modelProvider: selectedModel,
-        step: contentTypeSelected ? 'refine' : 'step1' // Indicate this is step 1
-      };
-      
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(messagePayload)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
+    // If no recommendation phrases found, check for any mention of content types
+    for (const type of contentTypeKeys) {
+      if (assistantMessage.includes(type.key) || 
+          assistantMessage.toLowerCase().includes(type.name.toLowerCase())) {
+        contentType = type.key;
       }
-      
-      const data = await response.json();
-      console.log('Chat API response:', data);
-      
-      const assistantMessage = { role: 'assistant', content: data.response[0].text };
-      setMessages([...updatedMessages, assistantMessage]);
-      
-      // If this is the first response and we didn't have a content type before
-      if (!contentTypeSelected) {
-        const contentType = extractContentType(assistantMessage.content);
-        if (contentType) {
-          console.log('Content type detected:', contentType);
-          setSelectedContentType(contentType);
-          setContentTypeSelected(true);
-        }
-      }
-      
-      // Don't look for JSON in step 1
-      setNeedsMoreInfo(false);
-      
-    } catch (err) {
-      setError(`Failed to send message: ${err.message}`);
-      console.error('Error sending message:', err);
-    } finally {
-      setIsLoading(false);
     }
-  };
-  
-  // Generate H5P content in step 2
-  const generateH5P = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      if (!selectedContentType) {
-        throw new Error('No content type selected');
-      }
-      
-      // Create a new message for the generation request
-      const generationRequest = `Please generate the H5P JSON structure for the ${selectedContentType} content we've discussed.`;
-      const newMessage = { role: 'user', content: generationRequest };
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      
-      // Prepare payload for step 2
-      const messagePayload = {
-        messages: updatedMessages,
-        currentH5PParams: currentH5PParams,
-        modelProvider: selectedModel,
-        step: 'step2',
-        contentType: selectedContentType
-      };
-      
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(messagePayload)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('H5P generation response:', data);
-      
-      const assistantMessage = { role: 'assistant', content: data.response[0].text };
-      setMessages([...updatedMessages, assistantMessage]);
-      
-      // Extract JSON content (it should be there in step 2)
-      const jsonContent = extractJsonFromResponse(data.response);
-      
-      if (jsonContent) {
-        console.log('JSON content found, creating H5P content...');
-        setCurrentH5PParams(jsonContent);
-        await createH5PContent(jsonContent);
-        setStepTwoReady(true);
-      } else {
-        setError('No valid H5P structure found in the response');
-      }
-      
-    } catch (err) {
-      setError(`Failed to generate H5P: ${err.message}`);
-      console.error('Error generating H5P:', err);
-    } finally {
-      setIsLoading(false);
-    }
+    
+    return contentType;
   };
   
   // Create H5P content
@@ -212,10 +120,177 @@ export default function Home() {
       setApiEndpoint(data.apiEndpoint);
       setStep('preview');
       setNeedsMoreInfo(false); // New content is created, so we don't need more info
+      
+      // Enable refinement mode but keep the chat active
+      setStepTwoReady(false);
+      
+      // Add a system message to inform the user they can refine the content
+      const systemMessage = { 
+        role: 'assistant', 
+        content: t('contentRefinementReady')
+      };
+      setMessages(prev => [...prev, systemMessage]);
+      
     } catch (err) {
       setError(`Failed to create H5P content: ${err.message}`);
       console.error('Error creating H5P content:', err);
       setNeedsMoreInfo(true); // If error occurs, we need more info from user
+      setStepTwoReady(false); // Re-enable the chat input to allow corrections
+    }
+  };
+  
+  // Send message to Claude during step 1 or for refinement
+  const sendMessage = async (content) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const newMessage = { role: 'user', content };
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      
+      // Determine the current step
+      let currentStep = 'step1';
+      if (step === 'preview' && contentId) {
+        currentStep = 'refine'; // Use refine mode if we already have content
+      } else if (contentTypeSelected && !stepTwoReady) {
+        currentStep = 'step1'; // Still in step 1 but content type is selected
+      }
+      
+      // Include selected model in the payload
+      const messagePayload = {
+        messages: updatedMessages,
+        currentH5PParams: currentH5PParams, // Pass the current H5P parameters for refinement
+        modelProvider: selectedModel,
+        step: currentStep,
+        contentType: selectedContentType
+      };
+      
+      console.log(`Sending message in step: ${currentStep}`, 
+        currentStep === 'refine' ? 'with current H5P parameters' : '');
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messagePayload)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Chat API response:', data);
+      
+      // Get the assistant's response text
+      const assistantResponseText = data.response[0].text;
+      const assistantMessage = { role: 'assistant', content: assistantResponseText };
+      setMessages([...updatedMessages, assistantMessage]);
+      
+      // Check if this is step 1 and we need to detect content type
+      if (!contentTypeSelected && currentStep === 'step1') {
+        const contentType = extractContentType(assistantResponseText);
+        if (contentType) {
+          console.log('Content type detected:', contentType);
+          setSelectedContentType(contentType);
+          setContentTypeSelected(true);
+        }
+      }
+      
+      // Check if response contains JSON during refinement
+      if (currentStep === 'refine') {
+        const jsonContent = extractJsonFromResponse(data.response);
+        if (jsonContent) {
+          console.log('Updated JSON content found, recreating H5P content...');
+          setCurrentH5PParams(jsonContent);
+          await createH5PContent(jsonContent);
+        }
+      }
+      
+      // Always set needsMoreInfo to false to allow continuation of the conversation
+      setNeedsMoreInfo(false);
+      
+    } catch (err) {
+      setError(`Failed to send message: ${err.message}`);
+      console.error('Error sending message:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Generate H5P content in step 2
+  const generateH5P = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      if (!selectedContentType) {
+        throw new Error('No content type selected');
+      }
+      
+      // Create a new message for the generation request
+      const generationRequest = `Please generate the H5P JSON structure for the ${selectedContentType} content we've discussed.`;
+      const newMessage = { role: 'user', content: generationRequest };
+      const updatedMessages = [...messages, newMessage];
+      setMessages(updatedMessages);
+      
+      console.log(`Initiating step 2 (H5P generation) for content type: ${selectedContentType}`);
+      console.log(`Using AI model: ${selectedModel}`);
+      
+      // Prepare payload for step 2 - include all messages from step 1 for context
+      const messagePayload = {
+        messages: updatedMessages,
+        currentH5PParams: currentH5PParams,
+        modelProvider: selectedModel,
+        step: 'step2',
+        contentType: selectedContentType
+      };
+      
+      // Tell the user we're switching to step 2
+      setStepTwoReady(true);
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(messagePayload)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('H5P generation response:', data);
+      
+      // Update the UI with the assistant's response
+      if (data.response && data.response.length > 0) {
+        const assistantMessage = { 
+          role: 'assistant', 
+          content: data.response[0].text 
+        };
+        setMessages([...updatedMessages, assistantMessage]);
+        
+        // Extract JSON content (it should be there in step 2)
+        const jsonContent = extractJsonFromResponse(data.response);
+        
+        if (jsonContent) {
+          console.log('JSON content found, creating H5P content...');
+          setCurrentH5PParams(jsonContent);
+          await createH5PContent(jsonContent);
+        } else {
+          setError('No valid H5P structure found in the response. The AI may need more specific instructions.');
+          setStepTwoReady(false); // Allow the user to try again
+        }
+      } else {
+        throw new Error('Empty response from AI');
+      }
+      
+    } catch (err) {
+      setError(`Failed to generate H5P: ${err.message}`);
+      console.error('Error generating H5P:', err);
+      setStepTwoReady(false); // Allow the user to try again if there was an error
+    } finally {
+      setIsLoading(false);
     }
   };
   
