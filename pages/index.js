@@ -22,7 +22,20 @@ export default function Home() {
   const [stepTwoReady, setStepTwoReady] = useState(false);
   
   // Extract JSON from Claude's response
-  const extractJsonFromResponse = (responseContent) => {
+  const extractJsonFromResponse = (responseContent, preExtractedJson = null) => {
+    // If backend has already extracted the JSON, use it directly
+    if (preExtractedJson) {
+      try {
+        console.log('Using pre-extracted JSON from backend');
+        const parsedJson = JSON.parse(preExtractedJson.trim());
+        console.log('Successfully parsed pre-extracted JSON:', parsedJson);
+        return parsedJson;
+      } catch (err) {
+        console.error('Failed to parse pre-extracted JSON:', err);
+        // Fall back to manual extraction if pre-extracted JSON is invalid
+      }
+    }
+    
     console.log('Extracting JSON from response:', responseContent);
     for (const content of responseContent) {
       if (content.type === 'text') {
@@ -210,7 +223,7 @@ export default function Home() {
       
       // Check if response contains JSON during refinement
       if (currentStep === 'refine') {
-        const jsonContent = extractJsonFromResponse(data.response);
+        const jsonContent = extractJsonFromResponse(data.response, data.extractedJson);
         if (jsonContent) {
           console.log('Updated JSON content found, recreating H5P content...');
           setCurrentH5PParams(jsonContent);
@@ -326,7 +339,7 @@ Please regenerate the correct ${selectedContentType} structure.`;
         }
         
         // Extract JSON content (it should be there in step 2)
-        const jsonContent = extractJsonFromResponse(data.response);
+        const jsonContent = extractJsonFromResponse(data.response, data.extractedJson);
         
         if (jsonContent) {
           console.log('JSON content found, creating H5P content...');

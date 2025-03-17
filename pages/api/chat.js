@@ -3,6 +3,39 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 
+// Helper function to extract JSON from response content
+function extractJsonFromResponse(responseContent) {
+  // For Claude-style array of content objects
+  if (Array.isArray(responseContent)) {
+    for (const content of responseContent) {
+      if (content.type === 'text') {
+        const jsonMatch = content.text.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          try {
+            return jsonMatch[1].trim();
+          } catch (err) {
+            console.error('Error parsing JSON:', err);
+            return null;
+          }
+        }
+      }
+    }
+  } 
+  // For string content (AcademicCloud style)
+  else if (typeof responseContent === 'string') {
+    const jsonMatch = responseContent.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      try {
+        return jsonMatch[1].trim();
+      } catch (err) {
+        console.error('Error parsing JSON:', err);
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
 // Function to fetch available H5P library versions
 async function getH5PLibraryVersions() {
   // Use hardcoded library versions instead of making API calls
@@ -387,15 +420,18 @@ ${contentTypeDoc}`;
       
       console.log('Claude response received');
       
-      const hasJson = response.content.some(content => 
-        content.type === 'text' && content.text.includes('```json')
-      );
+      // Extract JSON using the helper function
+      const extractedJson = extractJsonFromResponse(response.content);
+      
+      // Check for JSON presence consistently between providers
+      const hasJson = extractedJson !== null;
       
       console.log('Has JSON:', hasJson);
       
       return res.status(200).json({
         response: response.content,
         hasJson,
+        extractedJson, // Include the pre-extracted JSON for easier processing
         needsMoreInfo: false
       });
     } else {
@@ -431,20 +467,26 @@ ${contentTypeDoc}`;
       
       console.log('AcademicCloud response received');
       
+      // Get raw content from the API response
+      const rawContent = apiResponse.data.choices[0].message.content;
+      
+      // Extract JSON using the helper function
+      const extractedJson = extractJsonFromResponse(rawContent);
+      
       // Format the response to match the structure expected by the frontend
       const formattedContent = [
-        { type: 'text', text: apiResponse.data.choices[0].message.content }
+        { type: 'text', text: rawContent }
       ];
       
-      const hasJson = formattedContent.some(content => 
-        content.type === 'text' && content.text.includes('```json')
-      );
+      // Check for JSON presence consistently between providers
+      const hasJson = extractedJson !== null;
       
       console.log('Has JSON:', hasJson);
       
       return res.status(200).json({
         response: formattedContent,
         hasJson,
+        extractedJson, // Include the pre-extracted JSON for easier processing
         needsMoreInfo: false
       });
     }
