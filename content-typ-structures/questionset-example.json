@@ -1,0 +1,177 @@
+{
+  "library": "H5P.QuestionSet 1.17",
+  "params": {
+    "metadata": {
+      "title": "Example Quiz",
+      "license": "U",
+      "extraTitle": "Example Quiz",
+      "authors": [
+        {
+          "name": "AI Generator",
+          "role": "Author"
+        }
+      ],
+      "changes": [
+        {
+          "date": "2023-07-01",
+          "author": "AI Generator",
+          "log": "Created"
+        }
+      ]
+    },
+    "params": {
+      "introPage": {
+        "showIntroPage": true,
+        "title": "Example Quiz",
+        "introduction": "<p>This is an example quiz to demonstrate the correct structure.</p>",
+        "startButtonText": "Start Quiz"
+      },
+      "questions": [
+        {
+          "library": "H5P.MultiChoice 1.16",
+          "params": {
+            "question": "<p>What is the capital of France?</p>",
+            "answers": [
+              {
+                "text": "Paris",
+                "correct": true,
+                "tipsAndFeedback": {
+                  "tip": "",
+                  "chosenFeedback": "Correct! Paris is the capital of France.",
+                  "notChosenFeedback": ""
+                }
+              },
+              {
+                "text": "London",
+                "correct": false,
+                "tipsAndFeedback": {
+                  "tip": "",
+                  "chosenFeedback": "Incorrect. London is the capital of the United Kingdom.",
+                  "notChosenFeedback": ""
+                }
+              },
+              {
+                "text": "Berlin",
+                "correct": false,
+                "tipsAndFeedback": {
+                  "tip": "",
+                  "chosenFeedback": "Incorrect. Berlin is the capital of Germany.",
+                  "notChosenFeedback": ""
+                }
+              },
+              {
+                "text": "Rome",
+                "correct": false,
+                "tipsAndFeedback": {
+                  "tip": "",
+                  "chosenFeedback": "Incorrect. Rome is the capital of Italy.",
+                  "notChosenFeedback": ""
+                }
+              }
+            ],
+            "behaviour": {
+              "enableRetry": true,
+              "enableSolutionsButton": true,
+              "enableCheckButton": true,
+              "type": "auto",
+              "singlePoint": true,
+              "randomAnswers": true,
+              "showSolutionsRequiresInput": true,
+              "confirmCheckDialog": false,
+              "confirmRetryDialog": false,
+              "autoCheck": false,
+              "passPercentage": 100,
+              "showScorePoints": true
+            }
+          },
+          "subContentId": "761cca1f-6432-4a3e-912c-bd31a3bf53de",
+          "metadata": {
+            "title": "Capital of France",
+            "extraTitle": "Capital of France"
+          }
+        },
+        {
+          "library": "H5P.MultiChoice 1.16",
+          "params": {
+            "question": "<p>Which of the following is NOT a primary color?</p>",
+            "answers": [
+              {
+                "text": "Red",
+                "correct": false,
+                "tipsAndFeedback": {
+                  "tip": "",
+                  "chosenFeedback": "Incorrect. Red is a primary color.",
+                  "notChosenFeedback": ""
+                }
+              },
+              {
+                "text": "Green",
+                "correct": true,
+                "tipsAndFeedback": {
+                  "tip": "",
+                  "chosenFeedback": "Correct! Green is a secondary color, not a primary color.",
+                  "notChosenFeedback": ""
+                }
+              },
+              {
+                "text": "Blue",
+                "correct": false,
+                "tipsAndFeedback": {
+                  "tip": "",
+                  "chosenFeedback": "Incorrect. Blue is a primary color.",
+                  "notChosenFeedback": ""
+                }
+              }
+            ],
+            "behaviour": {
+              "enableRetry": true,
+              "enableSolutionsButton": true,
+              "enableCheckButton": true,
+              "type": "auto",
+              "singlePoint": true,
+              "randomAnswers": true,
+              "showSolutionsRequiresInput": true,
+              "confirmCheckDialog": false,
+              "confirmRetryDialog": false,
+              "autoCheck": false,
+              "passPercentage": 100,
+              "showScorePoints": true
+            }
+          },
+          "subContentId": "e4d9a994-f9ce-48d0-9f0b-95a2c2b69de7",
+          "metadata": {
+            "title": "Primary Colors",
+            "extraTitle": "Primary Colors"
+          }
+        }
+      ],
+      "progressType": "dots",
+      "passPercentage": 50,
+      "showResults": true,
+      "endGame": {
+        "showResultPage": true,
+        "showSolutionButton": true,
+        "showRetryButton": true,
+        "noResultMessage": "You have completed the quiz.",
+        "message": "Your result:",
+        "overallFeedback": [
+          {
+            "from": 0,
+            "to": 50,
+            "feedback": "You need more practice."
+          },
+          {
+            "from": 50,
+            "to": 100,
+            "feedback": "Good job!"
+          }
+        ]
+      },
+      "override": {
+        "showSolutionButton": "on",
+        "retryButton": "on",
+        "checkButton": true
+      }
+    }
+  }
+} 

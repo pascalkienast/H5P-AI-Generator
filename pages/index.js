@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import ConversationUI from '../components/ConversationUI';
 import PreviewModule from '../components/PreviewModule';
+import { replaceSubContentIds } from '../utils/uuid';
 
 export default function Home() {
   const { t } = useTranslation();
@@ -102,10 +103,14 @@ export default function Home() {
       console.log('Creating H5P content with:', jsonContent);
       setError(null);
       
+      // Fix any invalid subContentIds before sending to API
+      const fixedContent = replaceSubContentIds(jsonContent);
+      console.log('Content after fixing subContentIds:', fixedContent);
+      
       const response = await fetch('/api/createH5P', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonContent })
+        body: JSON.stringify({ jsonContent: fixedContent })
       });
       
       if (!response.ok) {
@@ -243,7 +248,23 @@ export default function Home() {
       
       if (isRetry) {
         // For retry, include specific instructions about the error
-        generationRequest = `The previous attempt to generate the H5P content had validation errors. Please fix the JSON structure for the ${selectedContentType} content and ensure it follows the correct format. Make sure all required fields are included and properly formatted.`;
+        generationRequest = `${t('retryGeneration')}
+
+1. ${t('structureErrors.topLevelFormat')}
+{
+  "library": "H5P.ContentType X.Y",
+  "params": {
+    "metadata": { title, license, extraTitle },
+    "params": { content-specific structure }
+  }
+}
+
+2. ${t('structureErrors.noH5pObject')}
+3. ${t('structureErrors.noDuplicateMetadata')}
+4. ${t('structureErrors.useProperUUID')} (e.g., "subContentId": "761cca1f-6432-4a3e-912c-bd31a3bf53de")
+5. ${t('structureErrors.followExample')}
+
+Please regenerate the correct ${selectedContentType} structure.`;
         
         // Add a user message to show we're retrying
         const retryMessage = { 
@@ -313,7 +334,7 @@ export default function Home() {
           const result = await createH5PContent(jsonContent);
           
           // If content creation failed and we haven't exceeded max retries, try again
-          if (result.error && retryCount < MAX_RETRIES) {
+          if (result && result.error && retryCount < MAX_RETRIES) {
             console.log(`H5P content creation failed, retrying (${retryCount + 1}/${MAX_RETRIES})...`);
             
             // Add a system message indicating the retry
@@ -329,6 +350,7 @@ export default function Home() {
             setTimeout(() => {
               generateH5P(retryCount + 1);
             }, 1000);
+            return; // Exit function here to prevent setting isLoading to false prematurely
           }
         } else {
           // No JSON found in the response
@@ -348,6 +370,7 @@ export default function Home() {
             setTimeout(() => {
               generateH5P(retryCount + 1);
             }, 1000);
+            return; // Exit function here to prevent setting isLoading to false prematurely
           } else {
             setError('No valid H5P structure found after multiple attempts. Please try refining your request or selecting a different content type.');
             setStepTwoReady(false); // Re-enable the chat input
@@ -362,10 +385,7 @@ export default function Home() {
       console.error('Error generating H5P:', err);
       setStepTwoReady(false); // Re-enable the chat input to allow corrections
     } finally {
-      if (retryCount === 0 || retryCount >= 2) {
-        // Only set loading to false on initial attempt or final retry
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
   

@@ -47,16 +47,16 @@ function compareVersions(v1, v2) {
 // Get default version for a specific content type
 function getDefaultVersion(contentType) {
   const defaults = {
-    'H5P.MultiChoice': '1.16',
-    'H5P.TrueFalse': '1.8',
-    'H5P.Blanks': '1.14',
+      'H5P.MultiChoice': '1.16',
+      'H5P.TrueFalse': '1.8',
+      'H5P.Blanks': '1.14',
     'H5P.BranchingScenario': '1.7',
-    'H5P.DragQuestion': '1.14',
+      'H5P.DragQuestion': '1.14',
     'H5P.CoursePresentation': '1.24',
     'H5P.QuestionSet': '1.17',
-    'H5P.Summary': '1.10',
+      'H5P.Summary': '1.10',
     'H5P.InteractiveBook': '1.7',
-    'H5P.DragText': '1.10',
+      'H5P.DragText': '1.10',
     'H5P.Accordion': '1.0',
     'H5P.Questionnaire': '1.3'
   };
@@ -129,7 +129,17 @@ The user has already generated an H5P module with the following parameters. They
 ${h5pParamsString}
 \`\`\`
 
-When the user asks for changes, always respond with a complete updated JSON structure, not just the changed parts. Ensure the output is valid JSON inside a code block.`;
+🚨 IMPORTANT 🚨
+When providing refined content, you MUST:
+1. Maintain the exact same top-level structure format as shown above
+2. Keep ALL the same structure fields (library, params, metadata)
+3. NEVER add a top-level "h5p" object to wrap the content
+4. NEVER duplicate metadata in different locations
+5. Always provide a complete updated JSON, not just the changed parts
+6. Ensure the output is valid JSON inside a code block
+
+Always verify your JSON structure before providing the final answer to prevent API errors.
+`;
 }
 
 // Initialize Anthropic client
@@ -215,7 +225,80 @@ INSTRUCTIONS FOR STEP 2:
 4. Include the JSON within a code block using the format: \`\`\`json {...} \`\`\`
 5. After the JSON code block, briefly explain what you've created.
 
-Below are the detailed structure specifications for the selected content type. Follow these guidelines carefully:`;
+🚨 CRITICAL API COMPATIBILITY REQUIREMENTS 🚨
+To ensure compatibility with the H5P-AI-Generator API, you MUST adhere to the following structure:
+
+\`\`\`json
+{
+  "library": "H5P.ContentTypeName MajorVersion.MinorVersion",
+  "params": {
+    "metadata": {
+      "title": "Content Title",
+      "license": "U",
+      "extraTitle": "Content Title"
+      // Only include basic metadata fields here
+    },
+    "params": {
+      // Content-specific parameters
+    }
+  }
+}
+\`\`\`
+
+⚠️ IMPORTANT STRUCTURE RULES ⚠️
+- DO NOT include a top-level "h5p" object
+- DO NOT wrap your JSON in any additional objects
+- DO NOT duplicate metadata in different places
+- For "params.metadata", ONLY include: title, license, extraTitle (and optionally authors and changes)
+- DO NOT include preloadedDependencies, mainLibrary, embedTypes, etc.
+- Always include a proper subContentId as a UUID for each sub-content item (e.g., "subContentId": "761cca1f-6432-4a3e-912c-bd31a3bf53de")
+- Always ensure extraTitle matches title in all metadata objects
+
+📋 EXAMPLE FOR QUESTIONSET 📋
+Here's a valid structure for a QuestionSet (simplied):
+
+\`\`\`json
+{
+  "library": "H5P.QuestionSet 1.17",
+  "params": {
+    "metadata": {
+      "title": "Quiz Title",
+      "license": "U",
+      "extraTitle": "Quiz Title"
+    },
+    "params": {
+      "introPage": {
+        "showIntroPage": true,
+        "title": "Quiz Title",
+        "introduction": "<p>Introduction text</p>",
+        "startButtonText": "Start Quiz"
+      },
+      "questions": [
+        {
+          "library": "H5P.MultiChoice 1.16",
+          "params": {
+            "question": "<p>Question text?</p>",
+            "answers": [
+              {"text": "Answer 1", "correct": true},
+              {"text": "Answer 2", "correct": false}
+            ]
+          },
+          "subContentId": "7cbc7723-1a41-4f83-b7b0-590f87fda441",
+          "metadata": {
+            "title": "Question 1",
+            "extraTitle": "Question 1"
+          }
+        }
+      ],
+      "progressType": "dots",
+      "passPercentage": 50,
+      "showResults": true
+    }
+  }
+}
+\`\`\`
+
+Below are the detailed structure specifications for the selected content type. Follow these guidelines carefully for the content-specific structure, but ALWAYS use the simplified API-compatible metadata structure shown above:`;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -278,8 +361,8 @@ ${contentTypeDoc}`;
       }
       
       // Add current H5P parameters if available
-      if (currentH5PParams) {
-        systemPrompt = appendCurrentH5PtoPrompt(systemPrompt, currentH5PParams);
+    if (currentH5PParams) {
+      systemPrompt = appendCurrentH5PtoPrompt(systemPrompt, currentH5PParams);
       }
     } else {
       return res.status(400).json({ error: 'Invalid step parameter' });

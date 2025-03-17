@@ -33,8 +33,15 @@ const resources = {
       "contentRefinementReady": "Ihr H5P-Inhalt wurde erfolgreich generiert und kann unten angezeigt werden. Sie können jetzt Änderungen vorschlagen, um den Inhalt weiter zu verbessern.",
       "contentRefinementMode": "Verbesserungsmodus aktiv",
       "refinementInstructions": "Beschreiben Sie die gewünschten Änderungen am H5P-Inhalt. Die KI wird den Inhalt entsprechend aktualisieren.",
-      "retryGeneration": "Die Struktur hat Validierungsfehler, bitte korrigieren und neu generieren.",
+      "retryGeneration": "Die Struktur hat Validierungsfehler. Bitte korrigieren Sie das JSON-Format gemäß den Anforderungen:",
       "retryingGeneration": "Die vorherige Generierung hatte Fehler. Wir versuchen es automatisch erneut mit einer korrigierten Version...",
+      "structureErrors": {
+        "topLevelFormat": "Bitte stellen Sie sicher, dass die Struktur genau diesem Format folgt:",
+        "noH5pObject": "Fügen Sie KEIN übergeordnetes \"h5p\"-Objekt hinzu",
+        "noDuplicateMetadata": "Vermeiden Sie doppelte Metadaten-Felder",
+        "useProperUUID": "Verwenden Sie echte UUIDs für subContentId-Felder",
+        "followExample": "Folgen Sie dem Beispiel genau"
+      },
       "modelSelector": {
         "label": "KI-Modell",
         "models": {
@@ -103,8 +110,15 @@ const resources = {
       "contentRefinementReady": "Your H5P content has been successfully generated and can be viewed below. You can now suggest changes to further refine the content.",
       "contentRefinementMode": "Refinement Mode Active",
       "refinementInstructions": "Describe the changes you'd like to make to the H5P content. The AI will update the content accordingly.",
-      "retryGeneration": "The structure has validation errors, please correct and regenerate.",
+      "retryGeneration": "The structure has validation errors. Please correct the JSON format according to the requirements:",
       "retryingGeneration": "The previous generation had errors. We're automatically retrying with a corrected version...",
+      "structureErrors": {
+        "topLevelFormat": "Please ensure the structure follows exactly this format:",
+        "noH5pObject": "DO NOT include a top-level \"h5p\" object",
+        "noDuplicateMetadata": "DO NOT duplicate metadata fields",
+        "useProperUUID": "Use proper UUIDs for subContentId fields",
+        "followExample": "Follow the example structure exactly"
+      },
       "modelSelector": {
         "label": "AI Model",
         "models": {

@@ -1,5 +1,87 @@
 # H5P QuestionSet: Definitive Structure Guide
 
+# 🚨 IMPORTANT API COMPATIBILITY NOTE FOR H5P-AI-GENERATOR 🚨
+
+When generating QuestionSet content for the H5P-AI-Generator application, you **MUST** use the following simplified structure that matches what the application's API expects:
+
+```json
+{
+  "library": "H5P.QuestionSet 1.17",
+  "params": {
+    "metadata": {
+      "title": "Quiz Title",
+      "license": "U",
+      "extraTitle": "Quiz Title",
+      "authors": [],
+      "changes": []
+    },
+    "params": {
+      "questions": [
+        // Question objects here
+      ],
+      // Other QuestionSet parameters
+    }
+  }
+}
+```
+
+**DO NOT include the following elements as they will cause API errors:**
+1. **DO NOT** include a top-level `h5p` object
+2. **DO NOT** duplicate all metadata fields in `params.metadata` - use only these specific fields:
+   - `title` (required)
+   - `license` (required)
+   - `extraTitle` (required, must match title)
+   - `authors` (optional)
+   - `changes` (optional)
+3. **DO NOT** include `preloadedDependencies`, `mainLibrary`, or other H5P-specific metadata fields
+
+The H5P-AI-Generator application handles these fields automatically on the server side.
+
+### Sample Correct Structure for the API
+
+```json
+{
+  "library": "H5P.QuestionSet 1.17",
+  "params": {
+    "metadata": {
+      "title": "University Quiz",
+      "license": "U",
+      "extraTitle": "University Quiz" 
+    },
+    "params": {
+      "introPage": {
+        "showIntroPage": true,
+        "title": "Quiz Title",
+        "introduction": "<p>Introduction text</p>",
+        "startButtonText": "Start Quiz"
+      },
+      "questions": [
+        {
+          "library": "H5P.MultiChoice 1.16",
+          "params": {
+            "question": "<p>Question text?</p>",
+            "answers": [
+              {"text": "Answer 1", "correct": true},
+              {"text": "Answer 2", "correct": false}
+            ]
+          },
+          "subContentId": "7cbc7723-1a41-4f83-b7b0-590f87fda441",
+          "metadata": {
+            "title": "Question Title",
+            "extraTitle": "Question Title"
+          }
+        }
+      ],
+      "progressType": "dots",
+      "passPercentage": 50,
+      "showResults": true
+    }
+  }
+}
+```
+
+---
+
 # ⚠️ CRITICAL STRUCTURAL REQUIREMENTS - READ CAREFULLY ⚠️
 
 **MOST COMMON ERRORS THAT WILL CAUSE COMPLETE FAILURE OF THE H5P MODULE:**
