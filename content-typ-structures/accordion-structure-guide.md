@@ -16,14 +16,17 @@ A working H5P Accordion **must** maintain this exact top-level structure:
     "metadata": {
       // DUPLICATE of top-level h5p metadata
     },
-    "panels": [
-      // Array of accordion panels
-    ],
-    "behaviour": {
-      // Behavior settings
-    },
-    "l10n": {
-      // UI text labels
+    "params": {
+      "panels": [
+        // Array of accordion panels
+      ],
+      "behaviour": {
+        // Behavior settings
+      },
+      "l10n": {
+        // UI text labels
+      },
+      "hTag": "h2" // Heading level for panel titles
     }
   }
 }
@@ -34,6 +37,7 @@ A working H5P Accordion **must** maintain this exact top-level structure:
 1. **Dual Metadata Structure**: The H5P framework requires both the top-level `h5p` object AND duplicated metadata in `params.metadata`
 2. **Exact Library Definition**: Must specify the library name and version (`H5P.Accordion 1.0`)
 3. **Panels Array**: Must contain at least one panel with title and content
+4. **hTag Parameter**: Specifies the heading level for panel titles (typically "h2")
 
 ## 2. Metadata and Dependencies
 
@@ -49,7 +53,8 @@ Both the top-level `h5p` object and the `params.metadata` section **must** inclu
   "mainLibrary": "H5P.Accordion",
   "preloadedDependencies": [
     {"machineName": "H5P.Accordion", "majorVersion": 1, "minorVersion": 0},
-    {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5}
+    {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+    {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
   ]
 }
 ```
@@ -60,21 +65,48 @@ The framework requires these dependencies for Accordion functionality:
 
 - **H5P.Accordion**: Main content type
 - **FontAwesome**: For icons (collapse/expand)
+- **H5P.AdvancedText**: For panel content (required for proper content rendering)
 
 ## 3. Accordion Structure
 
-The main structure for an Accordion is defined in the params object:
+The main structure for an Accordion is defined in the params.params object:
 
 ```json
 "params": {
   "panels": [
     {
       "title": "First Panel Title",
-      "content": "<p>This is the content for the first panel. You can include HTML formatting.</p>"
+      "content": {
+        "params": {
+          "text": "<p>This is the content for the first panel. You can include HTML formatting.</p>"
+        },
+        "library": "H5P.AdvancedText 1.1",
+        "subContentId": "e381920b-2991-4e1a-96d5-9be91faed613",
+        "metadata": {
+          "contentType": "Text",
+          "license": "U",
+          "title": "Unbenannt: Text",
+          "authors": [],
+          "changes": []
+        }
+      }
     },
     {
       "title": "Second Panel Title",
-      "content": "<p>This is the content for the second panel. You can include HTML formatting, images, lists, etc.</p>"
+      "content": {
+        "params": {
+          "text": "<p>This is the content for the second panel.</p>"
+        },
+        "library": "H5P.AdvancedText 1.1",
+        "subContentId": "82cd104f-7f2f-4a74-98b7-ea9e01a55589",
+        "metadata": {
+          "contentType": "Text",
+          "license": "U",
+          "title": "Unbenannt: Text",
+          "authors": [],
+          "changes": []
+        }
+      }
     }
   ],
   "behaviour": {
@@ -85,7 +117,8 @@ The main structure for an Accordion is defined in the params object:
   "l10n": {
     "expandPanelLabel": "Expand panel",
     "collapsePanelLabel": "Collapse panel"
-  }
+  },
+  "hTag": "h2"
 }
 ```
 
@@ -94,6 +127,7 @@ The main structure for an Accordion is defined in the params object:
 1. **Panels**: Array of accordion panels, each with a title and content
 2. **Behavior Settings**: Controls how the accordion behaves
 3. **UI Text (l10n)**: Customizable labels for the user interface
+4. **hTag**: Specifies the heading level for panel titles (typically "h2")
 
 ## 4. Panel Structure
 
@@ -102,18 +136,38 @@ Each panel in the `panels` array follows this structure:
 ```json
 {
   "title": "Panel Title",
-  "content": "<p>Panel content with HTML formatting.</p>"
+  "content": {
+    "params": {
+      "text": "<p>Panel content with HTML formatting.</p>"
+    },
+    "library": "H5P.AdvancedText 1.1",
+    "subContentId": "e381920b-2991-4e1a-96d5-9be91faed613",
+    "metadata": {
+      "contentType": "Text",
+      "license": "U",
+      "title": "Unbenannt: Text",
+      "authors": [],
+      "changes": []
+    }
+  }
 }
 ```
 
 ### Panel Components:
 
 1. **Title**: The heading text shown in the collapsed state
-2. **Content**: The HTML content displayed when the panel is expanded
+2. **Content**: A complete content object with its own library reference
 
-#### Content Formatting:
+#### Content Object Structure:
 
-- Content supports full HTML formatting including:
+- **params**: Contains the actual content parameters (text for AdvancedText)
+- **library**: Must specify "H5P.AdvancedText 1.1" (or other compatible content type)
+- **subContentId**: A unique UUID for each content object (required)
+- **metadata**: Content-specific metadata
+
+#### Content Formatting within AdvancedText:
+
+The text parameter within AdvancedText supports full HTML formatting including:
   - Paragraphs: `<p>Text</p>`
   - Headings: `<h2>Heading</h2>`
   - Lists: `<ul><li>Item</li></ul>`
@@ -150,17 +204,20 @@ The l10n settings provide customizable text labels for the UI:
 1. **Issue**: Panels not expanding/collapsing
    **Solution**: Ensure the library version is correct and FontAwesome dependency is included
 
-2. **Issue**: HTML content not rendering correctly
-   **Solution**: Make sure HTML in the content field is properly formatted and escaped in JSON
+2. **Issue**: Content not displaying
+   **Solution**: Make sure H5P.AdvancedText is included in preloadedDependencies
 
 3. **Issue**: Content appears but without styling
    **Solution**: Verify that HTML tags are properly closed and nested
 
-4. **Issue**: Uneven panel heights
-   **Solution**: Set `behaviour.equalHeight` to true if you want consistent panel heights
+4. **Issue**: Missing subContentId
+   **Solution**: Generate a unique UUID for each content object
 
 5. **Issue**: Icons not appearing
    **Solution**: Ensure FontAwesome dependency is properly included in both metadata locations
+
+6. **Issue**: Panel titles not formatted correctly
+   **Solution**: Check that the hTag parameter is properly set
 
 ## 8. Complete Example Structure
 
@@ -177,7 +234,8 @@ Below is a minimal working example:
     "mainLibrary": "H5P.Accordion",
     "preloadedDependencies": [
       {"machineName": "H5P.Accordion", "majorVersion": 1, "minorVersion": 0},
-      {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5}
+      {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+      {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
     ]
   },
   "library": "H5P.Accordion 1.0",
@@ -191,22 +249,56 @@ Below is a minimal working example:
       "mainLibrary": "H5P.Accordion",
       "preloadedDependencies": [
         {"machineName": "H5P.Accordion", "majorVersion": 1, "minorVersion": 0},
-        {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5}
+        {"machineName": "FontAwesome", "majorVersion": 4, "minorVersion": 5},
+        {"machineName": "H5P.AdvancedText", "majorVersion": 1, "minorVersion": 1}
       ]
     },
-    "panels": [
-      {
-        "title": "First Panel",
-        "content": "<p>Content for the first panel.</p>"
+    "params": {
+      "panels": [
+        {
+          "title": "First Panel",
+          "content": {
+            "params": {
+              "text": "<p>Content for the first panel.</p>"
+            },
+            "library": "H5P.AdvancedText 1.1",
+            "subContentId": "e381920b-2991-4e1a-96d5-9be91faed613",
+            "metadata": {
+              "contentType": "Text",
+              "license": "U",
+              "title": "Unbenannt: Text",
+              "authors": [],
+              "changes": []
+            }
+          }
+        },
+        {
+          "title": "Second Panel",
+          "content": {
+            "params": {
+              "text": "<p>Content for the second panel.</p>"
+            },
+            "library": "H5P.AdvancedText 1.1",
+            "subContentId": "82cd104f-7f2f-4a74-98b7-ea9e01a55589",
+            "metadata": {
+              "contentType": "Text",
+              "license": "U",
+              "title": "Unbenannt: Text",
+              "authors": [],
+              "changes": []
+            }
+          }
+        }
+      ],
+      "behaviour": {
+        "expandAll": false,
+        "equalHeight": false
       },
-      {
-        "title": "Second Panel",
-        "content": "<p>Content for the second panel.</p>"
-      }
-    ],
-    "behaviour": {
-      "expandAll": false,
-      "equalHeight": false
+      "l10n": {
+        "expandPanelLabel": "Expand panel",
+        "collapsePanelLabel": "Collapse panel"
+      },
+      "hTag": "h2"
     }
   }
 }
@@ -248,68 +340,48 @@ To randomize the order of panels:
 }
 ```
 
-### 9.4 Rich Content Panels
+### 9.4 Using Other Content Types
 
-For panels with rich HTML content:
-
-```json
-"panels": [
-  {
-    "title": "Rich Content Panel",
-    "content": "<h2>Heading Inside Panel</h2><p>This panel contains rich <strong>formatted</strong> content including:</p><ul><li>Lists</li><li>Formatting</li><li>And <a href='https://h5p.org'>links</a></li></ul><table border='1'><tr><th>Header 1</th><th>Header 2</th></tr><tr><td>Cell 1</td><td>Cell 2</td></tr></table>"
-  }
-]
-```
-
-## 10. Advanced Content Types within Accordion
-
-### 10.1 Including Images
-
-Adding images to panel content:
+Panels can use content types other than H5P.AdvancedText:
 
 ```json
 "panels": [
   {
     "title": "Panel with Image",
-    "content": "<p>This panel contains an image:</p><img src='https://example.com/image.jpg' alt='Example image' width='300' height='200'>"
+    "content": {
+      "params": {
+        // Parameters specific to the content type
+      },
+      "library": "H5P.Image 1.1",
+      "subContentId": "unique-uuid-here",
+      "metadata": {
+        "contentType": "Image",
+        "license": "U",
+        "title": "Example Image",
+        "authors": [],
+        "changes": []
+      }
+    }
   }
 ]
 ```
 
-### 10.2 Including Lists
+## 10. Generating SubContentIds
 
-Adding ordered and unordered lists:
+Each content object requires a unique subContentId. These should be UUIDs in the format:
+`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx` (e.g., "e381920b-2991-4e1a-96d5-9be91faed613")
 
-```json
-"panels": [
-  {
-    "title": "Panel with Lists",
-    "content": "<p>Unordered list:</p><ul><li>Item 1</li><li>Item 2</li><li>Item 3</li></ul><p>Ordered list:</p><ol><li>First item</li><li>Second item</li><li>Third item</li></ol>"
-  }
-]
-```
-
-### 10.3 Including Tables
-
-Adding tables to organize information:
-
-```json
-"panels": [
-  {
-    "title": "Panel with Table",
-    "content": "<table border='1'><thead><tr><th>Header 1</th><th>Header 2</th><th>Header 3</th></tr></thead><tbody><tr><td>Row 1, Cell 1</td><td>Row 1, Cell 2</td><td>Row 1, Cell 3</td></tr><tr><td>Row 2, Cell 1</td><td>Row 2, Cell 2</td><td>Row 2, Cell 3</td></tr></tbody></table>"
-  }
-]
-```
+You can generate these using standard UUID libraries or online generators. Each panel's content must have its own unique subContentId.
 
 ## 11. Summary of Critical Requirements
 
 For a functioning H5P Accordion, the most critical elements are:
 
 1. **Dual metadata structure**: Both top-level and nested in params
-2. **Complete dependency declarations**: H5P.Accordion and FontAwesome must be declared in both metadata locations
+2. **Complete dependency declarations**: H5P.Accordion, FontAwesome, and H5P.AdvancedText must be declared in both metadata locations
 3. **Panels array**: Must contain at least one panel with title and content
-4. **Properly escaped HTML**: HTML content must be properly formatted and escaped in JSON
-5. **Consistent formatting**: Both title and content must be present for each panel
+4. **Content objects**: Each panel must contain a properly structured content object with library reference
+5. **SubContentId**: Each content object requires a unique UUID
+6. **hTag parameter**: Must be specified (typically "h2")
 
 By following this guide precisely, you can create reliable H5P Accordion content that functions correctly across all devices and platforms. 
