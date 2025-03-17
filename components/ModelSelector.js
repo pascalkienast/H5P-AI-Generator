@@ -10,9 +10,9 @@ export default function ModelSelector({ selectedModel, setSelectedModel }) {
     if (savedModel) {
       setSelectedModel(savedModel);
     } else {
-      // Set deepseek-r1 as default if no preference exists
-      setSelectedModel('deepseek-r1');
-      localStorage.setItem('aiModelPreference', 'deepseek-r1');
+      // Set claude as default if no preference exists
+      setSelectedModel('claude');
+      localStorage.setItem('aiModelPreference', 'claude');
     }
   }, [setSelectedModel]);
 
