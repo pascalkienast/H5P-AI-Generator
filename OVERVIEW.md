@@ -490,4 +490,35 @@ The application implements several security measures:
 - Input validation before processing user content
 - Timeouts for external API calls to prevent resource exhaustion
 - Content sanitization for user-generated inputs
-- Properly configured CORS handling for API endpoints 
+- Properly configured CORS handling for API endpoints
+
+## Recent Changes
+
+### Content Type Structure Documentation
+
+The application now automatically loads content-specific structure documentation during Step 2 (H5P Generation). Key improvements include:
+
+1. **Content Type Structure Guides**: Added comprehensive MD files in the `content-typ-structures` directory that contain detailed JSON structures for each supported content type:
+   - Each content type has its own dedicated markdown file (e.g., `multichoice-structure-guide.md`)
+   - Files include specific structure requirements, examples, and common pitfalls
+   - Detailed JSON format specifications with comments and explanations
+
+2. **Automatic Documentation Loading**: The system now automatically:
+   - Identifies the selected content type in Step 1 using advanced pattern matching
+   - In Step 2, loads the corresponding structure documentation file based on content type
+   - Incorporates structure documentation directly into the AI system prompt
+   - Provides the AI with precise, content-type-specific JSON templates
+
+3. **Improved JSON Generation Accuracy**: This change significantly improves H5P content generation by:
+   - Giving the AI exact structure specifications for the selected content type
+   - Reducing common structure errors in complex content types
+   - Enforcing proper subContentId usage and library versioning
+   - Ensuring consistent metadata structure across all generated content
+
+4. **Implementation Details**:
+   - Content type mapping in `getContentTypeStructure()` function in `pages/api/chat.js`
+   - Dynamic loading of structure documentation using `fs.readFileSync()`
+   - Automatic inclusion in step 2 system prompt when selecting "Generate H5P"
+   - Consistent formatting across all content types for predictable AI generation
+
+This enhancement ensures that the AI has the most detailed and up-to-date information about each content type's structure requirements, significantly improving the generation success rate, especially for complex content types like Branching Scenario and Course Presentation. 
