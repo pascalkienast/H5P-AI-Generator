@@ -103,6 +103,36 @@ docker build -t h5p-ai-generator .
 docker run -p 3000:3000 --env-file .env.local h5p-ai-generator
 ```
 
+### Using Docker Compose
+
+A docker-compose.yml file is provided for easier deployment:
+
+```bash
+docker-compose up -d
+```
+
+### Deploying to Cloudron
+
+The application can be deployed to [Cloudron](https://cloudron.io/), a platform for self-hosting web applications:
+
+1. Install the Cloudron CLI on your development machine:
+   ```bash
+   sudo npm install -g cloudron
+   ```
+
+2. Login to your Cloudron server:
+   ```bash
+   cloudron login my.cloudron.example.com
+   ```
+
+3. Build and deploy the application:
+   ```bash
+   cloudron build
+   cloudron install
+   ```
+
+For detailed Cloudron deployment instructions, see [CLOUDRON.md](CLOUDRON.md).
+
 ### Cloud Deployment Options
 
 The application can be deployed to various cloud platforms:
