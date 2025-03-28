@@ -16,7 +16,6 @@ RUN mkdir -p public
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Add error checking for the build process
@@ -29,13 +28,18 @@ WORKDIR /app
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# Install required utilities
+RUN apk add --no-cache wget curl
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy public directory and content-type-structures directory
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/content-typ-structures ./content-typ-structures
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
+RUN mkdir -p .next
 RUN chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
@@ -50,6 +54,13 @@ ENV PORT 3000
 # set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
 
+# Add health check for Cloudron
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Startup script to check required environment variables (provided by Cloudron)
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/docker-entrypoint.sh ./
+RUN chmod +x ./docker-entrypoint.sh
+
 # server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"] 

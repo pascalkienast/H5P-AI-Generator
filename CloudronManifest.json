@@ -1,0 +1,52 @@
+{
+  "id": "com.h5p.ai-generator",
+  "title": "H5P AI Generator",
+  "author": "Pascal Kienast",
+  "description": "A Next.js application that uses advanced AI models to generate interactive H5P content for education",
+  "tagline": "Generate interactive H5P content using AI",
+  "version": "1.0.0",
+  "healthCheckPath": "/",
+  "httpPort": 3000,
+  "addons": {
+    "localstorage": {}
+  },
+  "manifestVersion": 2,
+  "website": "https://github.com/pascalkienast/H5P-AI-Generator",
+  "contactEmail": "info@example.com",
+  "icon": "file://logo.png",
+  "mediaLinks": [],
+  "memoryLimit": 512,
+  "env": {
+    "ANTHROPIC_API_KEY": {
+      "title": "Anthropic API Key",
+      "description": "API key for Anthropic Claude",
+      "example": "sk-ant-...",
+      "required": true
+    },
+    "AI_API_KEY": {
+      "title": "Academic Cloud API Key",
+      "description": "API key for Academic Cloud API",
+      "example": "your_api_key",
+      "required": true
+    },
+    "AI_API_ENDPOINT": {
+      "title": "Academic Cloud API Endpoint",
+      "description": "URL for Academic Cloud API",
+      "example": "https://api.example.com",
+      "required": true
+    },
+    "H5P_API_KEY": {
+      "title": "H5P API Key",
+      "description": "API key for the H5P REST API",
+      "example": "your_h5p_api_key",
+      "required": true
+    },
+    "H5P_API_ENDPOINT": {
+      "title": "H5P API Endpoint",
+      "description": "URL of the H5P REST API server",
+      "example": "http://h5p-api.example.com",
+      "required": true
+    }
+  },
+  "documentationUrl": "https://github.com/pascalkienast/H5P-AI-Generator"
+} 

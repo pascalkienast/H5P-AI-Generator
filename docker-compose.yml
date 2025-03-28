@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  h5p-ai-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - ANTHROPIC_API_KEY=your_anthropic_api_key
+      - AI_API_KEY=your_ai_api_key
+      - AI_API_ENDPOINT=your_ai_api_endpoint
+      - H5P_API_KEY=your_h5p_api_key
+      - H5P_API_ENDPOINT=your_h5p_api_endpoint
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped 
